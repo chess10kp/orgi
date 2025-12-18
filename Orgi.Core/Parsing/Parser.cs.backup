@@ -26,7 +26,6 @@ public class Parser(string filePath = ".orgi/orgi.org")
 
     private static readonly Dictionary<string, IssueState> IssueMap = new()
     {
-        // TODO: allow for custom todo states
         { "TODO", IssueState.Todo },
         { "INPROGRESS", IssueState.InProgress },
         { "DONE", IssueState.Done },
@@ -109,9 +108,6 @@ public class Parser(string filePath = ".orgi/orgi.org")
 
     private void ParseHeading()
     {
-        
-        if (_state != ParserState.Unassigned) throw new FormatException($"Expected header but found: {_state}");
-        if (!_line.StartsWith("*")) throw new FormatException($"Expected * when parsing header, but found: {_line}");
         // Count stars for level
         _currentLevel = 0;
         while (_ptr < _line.Length && _line[_ptr] == '*')
@@ -120,6 +116,7 @@ public class Parser(string filePath = ".orgi/orgi.org")
             _ptr++;
         }
         
+        // Skip whitespace after stars
         ConsumeUntil(c => !char.IsWhiteSpace(c));
         
         // Parse issue state
@@ -128,7 +125,7 @@ public class Parser(string filePath = ".orgi/orgi.org")
         // Skip whitespace after issue state
         ConsumeUntil(c => !char.IsWhiteSpace(c));
         
-        // Check for priority [#A]
+        // Check for priority cookie [#A], [#B], [#C]
         _currentPriority = Priority.None;
         if (_ptr + 3 < _line.Length && _line[_ptr] == '[' && _line[_ptr + 1] == '#' && _line[_ptr + 3] == ']')
         {
@@ -140,7 +137,6 @@ public class Parser(string filePath = ".orgi/orgi.org")
                     'A' => Priority.A,
                     'B' => Priority.B,
                     'C' => Priority.C,
-                    // TODO: add more priority
                     _ => Priority.None
                 };
                 _ptr += 4; // Skip [#X]
@@ -192,6 +188,8 @@ public class Parser(string filePath = ".orgi/orgi.org")
         
         // Read lines until :END:
         using var reader = new StreamReader(_filePath);
+        // Skip to current position - this is a simplified approach
+        // In a real implementation, we'd need to track file position
         
         // For now, let's assume we're reading line by line in the main Parse method
         // This method will be called when we encounter :PROPERTIES:
@@ -207,7 +205,6 @@ public class Parser(string filePath = ".orgi/orgi.org")
         // Continue reading until next headline or end of file
         // This will be handled in the main Parse method
     }
-
 
     public IEnumerable<Issue> Parse()
     {
@@ -231,16 +228,15 @@ public class Parser(string filePath = ".orgi/orgi.org")
             // If we hit a new headline and we have a pending issue, finalize it
             if (_line.StartsWith('*') && _state != ParserState.Unassigned)
             {
-                CreateCurrentIssue(currentProperties, currentBody, currentTags);
+                FinalizeCurrentIssue(currentProperties, currentBody, currentTags);
                 currentProperties.Clear();
                 currentBody.Clear();
                 currentTags.Clear();
-                _state = ParserState.Unassigned;
             }
 
             if (_line.StartsWith('*'))
             {
-                ParseHeading();
+                ParseHeadline();
                 _state = ParserState.Headline;
             }
             else if (_state == ParserState.Headline || _state == ParserState.Properties)
@@ -254,7 +250,7 @@ public class Parser(string filePath = ".orgi/orgi.org")
                 {
                     _state = ParserState.Body;
                 }
-                else if (_state == ParserState.Properties && _line.TrimStart().StartsWith(':') && _line.Contains(':'))
+                else if (_state == ParserState.Properties && _line.StartsWith(':') && _line.Contains(':'))
                 {
                     ParsePropertyLine(currentProperties);
                 }
@@ -274,7 +270,7 @@ public class Parser(string filePath = ".orgi/orgi.org")
         // Finalize the last issue if there is one
         if (_state != ParserState.Unassigned)
         {
-            CreateCurrentIssue(currentProperties, currentBody, currentTags);
+            FinalizeCurrentIssue(currentProperties, currentBody, currentTags);
         }
 
         return _issues;
@@ -282,7 +278,7 @@ public class Parser(string filePath = ".orgi/orgi.org")
 
     private void ParsePropertyLine(Dictionary<string, string> properties)
     {
-        var trimmed = _line.TrimStart();
+        var trimmed = _line.Trim();
         if (!trimmed.StartsWith(':') || !trimmed.Contains(':'))
         {
             throw new FormatException($"Invalid property line format: {_line}");
@@ -305,7 +301,7 @@ public class Parser(string filePath = ".orgi/orgi.org")
         properties[key] = value;
     }
 
-    private void CreateCurrentIssue(Dictionary<string, string> properties, List<string> bodyLines, List<string> tags)
+    private void FinalizeCurrentIssue(Dictionary<string, string> properties, List<string> bodyLines, List<string> tags)
     {
         if (string.IsNullOrEmpty(_headline))
         {

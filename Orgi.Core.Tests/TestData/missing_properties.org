@@ -1,0 +1,8 @@
+* TODO Missing properties
+  :PROPERTIES:
+  :ID: test-001
+  :TITLE: Test issue
+  :CREATED_AT: <2025-09-12 Fri>
+  :END:
+
+  This issue is missing required properties.
