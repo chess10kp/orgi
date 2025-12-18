@@ -5,12 +5,12 @@ namespace Orgi.Core.Parsing;
 public static class TimestampParser
 {
     private static readonly Regex OrgTimestampRegex = new Regex(
-        @"^<(\d{4})-(\d{2})-(\d{2})(?:\s+[A-Za-z]+)?(?:\s+(\d{2}):(\d{2})(?:-(\d{2}):(\d{2))?)?>$",
+        @"^<(\d{4})-(\d{2})-(\d{2})(?:\s+[A-Za-z]+)?(?:\s+(\d{2}):(\d{2})(?:-(\d{2}):(\d{2}))?)?>$",
         RegexOptions.Compiled
     );
 
     private static readonly Regex InactiveOrgTimestampRegex = new Regex(
-        @"^\[(\d{4})-(\d{2})-(\d{2})(?:\s+[A-Za-z]+)?(?:\s+(\d{2}):(\d{2})(?:-(\d{2}):(\d{2))?)?\]$",
+        @"^\[(\d{4})-(\d{2})-(\d{2})(?:\s+[A-Za-z]+)?(?:\s+(\d{2}):(\d{2})(?:-(\d{2}):(\d{2}))?)?\]$",
         RegexOptions.Compiled
     );
 

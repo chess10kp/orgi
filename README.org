@@ -1,0 +1,95 @@
+* Orgi
+Org Issue
+
+A local first solution for project issues that doesn't need github
+
+** Installation
+
+*** Prerequisites
+
+- .NET 10.0 SDK
+
+*** From Source
+
+1. Clone the repository:
+   #+begin_src bash
+   git clone https://github.com/your-repo/orgi.git
+   cd orgi
+   #+end_src
+
+2. Build the project:
+   #+begin_src bash
+   dotnet build Orgi.Core/Orgi.Core.csproj
+   #+end_src
+
+3. Run the executable:
+   #+begin_src bash
+   dotnet run --project Orgi.Core
+   #+end_src
+
+*** Using Docker
+
+1. Build the Docker image:
+   #+begin_src bash
+   docker build -t orgi Orgi.Core/
+   #+end_src
+
+2. Run the container:
+   #+begin_src bash
+   docker run -it orgi
+   #+end_src
+
+** Usage
+
+*** Initialize a new Orgi repository
+
+#+begin_src bash
+orgi init
+#+end_src
+
+Creates a ~.org/orgi.org~ file for storing issues.
+
+*** List issues
+
+#+begin_src bash
+orgi list [all|open] [file]
+#+end_src
+
+- ~all~: List all issues (default: open only)
+- ~open~: List only open issues (TODO and INPROGRESS)
+- ~file~: Path to .org file (default: ~.org/orgi.org~)
+
+*** Add a new issue
+
+#+begin_src bash
+orgi add [file] [-b body]
+#+end_src
+
+- ~file~: Path to .org file (default: ~.org/orgi.org~)
+- ~-b body~: Body text for the issue
+
+Prompts for title, priority (A/B/C), state (TODO/INPROGRESS/DONE/KILL), tags, and body.
+
+*** Default behavior
+
+- ~orgi~: List open issues from ~.org/orgi.org~
+- ~orgi <file>~: List open issues from specified file
+- ~orgi <file> all~: List all issues from specified file
+
+** Issue Format
+
+Issues are stored in Org mode format:
+
+#+begin_src org
+* TODO [#A] Issue title :tag1:tag2:
+  :PROPERTIES:
+  :ID: task-20231218120000
+  :TITLE: Issue title
+  :CREATED: <2023-12-18 Mon 12:00>
+  :END:
+
+  Issue body
+#+end_src
+
+States: TODO, INPROGRESS, DONE, KILL
+Priorities: A (high), B (medium), C (low)

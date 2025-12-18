@@ -11,6 +11,18 @@ public static class Program
     {
         try
         {
+            if (args.Length > 0 && (args[0] == "--help" || args[0] == "-h"))
+            {
+                ShowHelp();
+                return;
+            }
+
+            if (args.Length > 0 && (args[0] == "--version" || args[0] == "-v"))
+            {
+                ShowVersion();
+                return;
+            }
+
             if (args.Length > 0 && args[0] == "init")
             {
                 var dirPath = ".org";
@@ -53,10 +65,19 @@ public static class Program
                 return;
             }
 
+            // Handle unknown command
+            if (args.Length > 0 && !File.Exists(args[0]) && args[0] != "list" && args[0] != "add")
+            {
+                Console.Error.WriteLine($"Error: Unknown command '{args[0]}'");
+                Console.Error.WriteLine("Use 'orgi --help' for usage information");
+                Environment.Exit(1);
+            }
+
             // Default behavior: list issues from default file or provided file
             var defaultFilePath = ".org/orgi.org";
             var parseFilePath = args.Length > 0 ? args[0] : defaultFilePath;
-            Console.WriteLine(ListIssues(parseFilePath), args.Length > 1 && args[1] == "all"); // list "all" for all and "open" for just open
+            var listAll = args.Length > 1 && args[1] == "all";
+            Console.WriteLine(ListIssues(parseFilePath, !listAll)); // list "all" for all and "open" for just open
         }
         catch (Exception ex)
         {
@@ -240,6 +261,42 @@ public static class Program
         {
             Console.Error.WriteLine($"Error: Unexpected error writing to file {filePath}: {ex.Message}");
         }
+    }
+
+    private static void ShowHelp()
+    {
+        var helpText = @"
+Orgi - Command-line tool for managing issues in Org mode files
+
+USAGE:
+    orgi [COMMAND] [OPTIONS]
+
+COMMANDS:
+    init                    Initialize a new orgi repository
+    list [all|open] [file]  List issues
+    add [file] [OPTIONS]    Add a new issue
+    --help, -h              Show this help message
+    --version, -v           Show version information
+
+LIST COMMAND:
+    orgi list               List open issues from .org/orgi.org
+    orgi list all           List all issues from .org/orgi.org
+    orgi list <file>        List open issues from specified file
+    orgi list all <file>    List all issues from specified file
+
+ADD COMMAND:
+    orgi add               Add new issue interactively
+    orgi add <file>        Add new issue to specified file
+
+For more information, visit: https://github.com/your-repo/orgi
+";
+        Console.WriteLine(helpText.Trim());
+    }
+
+    private static void ShowVersion()
+    {
+        Console.WriteLine("Orgi version 1.0.0");
+        Console.WriteLine("A command-line tool for managing issues in Org mode files");
     }
 }
 
