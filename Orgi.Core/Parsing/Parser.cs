@@ -1,5 +1,6 @@
 using Orgi.Core.Model;
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 
 namespace Orgi.Core.Parsing;
 
@@ -120,14 +121,14 @@ public class Parser(string filePath = ".orgi/orgi.org")
             _ptr++;
         }
         
-        ConsumeUntil(c => !char.IsWhiteSpace(c));
-        
+        ConsumeUntil(c => char.IsWhiteSpace(c));
+
         // Parse issue state
         ParseIssueState();
-        
+
         // Skip whitespace after issue state
-        ConsumeUntil(c => !char.IsWhiteSpace(c));
-        
+        ConsumeUntil(c => char.IsWhiteSpace(c));
+
         // Check for priority [#A]
         _currentPriority = Priority.None;
         if (_ptr + 3 < _line.Length && _line[_ptr] == '[' && _line[_ptr + 1] == '#' && _line[_ptr + 3] == ']')
@@ -146,28 +147,13 @@ public class Parser(string filePath = ".orgi/orgi.org")
                 _ptr += 4; // Skip [#X]
             }
         }
-        
+
         // Skip whitespace after priority
-        ConsumeUntil(c => !char.IsWhiteSpace(c));
+        ConsumeUntil(c => char.IsWhiteSpace(c));
         
         // Extract headline text (everything until tags or end of line)
         var headlineStart = _ptr;
-        var headlineEnd = _line.Length;
-        
-        // Look for tags at the end (format: :tag1:tag2:)
-        var lastColonIndex = _line.LastIndexOf(':');
-        if (lastColonIndex > headlineStart)
-        {
-            var potentialTags = _line[headlineStart..];
-            if (potentialTags.StartsWith(':') && potentialTags.EndsWith(':') && potentialTags.Count(c => c == ':') >= 2)
-            {
-                // Found tags, extract headline before tags
-                var tagsStart = _line.IndexOf(':', headlineStart);
-                headlineEnd = tagsStart;
-            }
-        }
-        
-        _headline = _line[headlineStart..headlineEnd].Trim();
+        _headline = _line[headlineStart..].Trim();
         
         if (string.IsNullOrWhiteSpace(_headline))
         {
@@ -231,6 +217,10 @@ public class Parser(string filePath = ".orgi/orgi.org")
             // If we hit a new headline and we have a pending issue, finalize it
             if (_line.StartsWith('*') && _state != ParserState.Unassigned)
             {
+                if (_state == ParserState.Properties)
+                {
+                    throw new FormatException("Unterminated properties drawer");
+                }
                 CreateCurrentIssue(currentProperties, currentBody, currentTags);
                 currentProperties.Clear();
                 currentBody.Clear();
@@ -274,6 +264,10 @@ public class Parser(string filePath = ".orgi/orgi.org")
         // Finalize the last issue if there is one
         if (_state != ParserState.Unassigned)
         {
+            if (_state == ParserState.Properties)
+            {
+                throw new FormatException("Unterminated properties drawer");
+            }
             CreateCurrentIssue(currentProperties, currentBody, currentTags);
         }
 
@@ -347,19 +341,15 @@ public class Parser(string filePath = ".orgi/orgi.org")
 
     private void ExtractTagsFromHeadline(List<string> tags)
     {
-        var lastColonIndex = _headline.LastIndexOf(':');
-        if (lastColonIndex > 0)
+        var match = Regex.Match(_headline, @"(:[^:]+)+:$");
+        if (match.Success)
         {
-            var potentialTags = _headline[lastColonIndex..];
-            if (potentialTags.StartsWith(':') && potentialTags.EndsWith(':'))
-            {
-                var tagStr = potentialTags.Trim(':');
-                var extractedTags = tagStr.Split(':', StringSplitOptions.RemoveEmptyEntries);
-                tags.AddRange(extractedTags);
-                
-                // Remove tags from headline
-                _headline = _headline[.._headline.LastIndexOf(':')].Trim();
-            }
+            var tagStr = match.Value.Trim(':');
+            var extractedTags = tagStr.Split(':', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim());
+            tags.AddRange(extractedTags);
+
+            // Remove tags from headline
+            _headline = _headline[..match.Index].Trim();
         }
     }
 }
