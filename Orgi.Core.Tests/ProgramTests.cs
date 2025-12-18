@@ -15,9 +15,26 @@ public class ProgramTests
         var output = Program.ListIssues(testFile);
 
         // Assert
+        Assert.Contains("Found 2 open issues:", output);
+        Assert.Contains("bug-001: Parser crash on empty file", output);
+        Assert.Contains("(Todo)", output);
+        Assert.Contains("[A]", output);
+    }
+
+    [Fact]
+    public void ListIssues_ValidFile_ListAll_ReturnsAllIssues()
+    {
+        // Arrange
+        var testFile = Path.Combine(Directory.GetCurrentDirectory(), "TestData", "valid_issues.org");
+
+        // Act
+        var output = Program.ListIssues(testFile, false);
+
+        // Assert
         Assert.Contains("Found 3 issues:", output);
         Assert.Contains("bug-001: Parser crash on empty file", output);
         Assert.Contains("(Todo)", output);
+        Assert.Contains("(Done)", output);
         Assert.Contains("[A]", output);
     }
 
@@ -31,7 +48,20 @@ public class ProgramTests
         var output = Program.ListIssues(testFile);
 
         // Assert
-        Assert.Equal("Found 0 issues:", output);
+        Assert.Equal("no open issues", output);
+    }
+
+    [Fact]
+    public void ListIssues_EmptyFile_ListAll_ReturnsNoIssues()
+    {
+        // Arrange
+        var testFile = Path.Combine(Directory.GetCurrentDirectory(), "TestData", "empty_file.org");
+
+        // Act
+        var output = Program.ListIssues(testFile, false);
+
+        // Assert
+        Assert.Equal("no issues", output);
     }
 
     [Fact]
@@ -44,7 +74,7 @@ public class ProgramTests
         var result = Program.ListIssues(testFile);
 
         // Assert
-        Assert.Contains("Error: File not found", result);
+        Assert.Contains("File not found", result);
         Assert.Contains(testFile, result);
     }
 

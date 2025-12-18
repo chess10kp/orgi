@@ -1,6 +1,7 @@
 using Orgi.Core.Parsing;
 using System.Diagnostics;
 using System.IO;
+using Orgi.Core.Model;
 
 namespace Orgi.Core;
 
@@ -22,8 +23,26 @@ public static class Program
 
             if (args.Length > 0 && args[0] == "list")
             {
-                var listFilePath = args.Length > 1 ? args[1] : ".org/orgi.org";
-                Console.WriteLine(ListIssues(listFilePath));
+                bool onlyOpen = true;
+                string listFilePath = ".org/orgi.org";
+                if (args.Length > 1)
+                {
+                    if (args[1] == "all")
+                    {
+                        onlyOpen = false;
+                        listFilePath = args.Length > 2 ? args[2] : ".org/orgi.org";
+                    }
+                    else if (args[1] == "open")
+                    {
+                        onlyOpen = true;
+                        listFilePath = args.Length > 2 ? args[2] : ".org/orgi.org";
+                    }
+                    else
+                    {
+                        listFilePath = args[1];
+                    }
+                }
+                Console.WriteLine(ListIssues(listFilePath, onlyOpen));
                 return;
             }
 
@@ -37,7 +56,7 @@ public static class Program
             // Default behavior: list issues from default file or provided file
             var defaultFilePath = ".org/orgi.org";
             var parseFilePath = args.Length > 0 ? args[0] : defaultFilePath;
-            Console.WriteLine(ListIssues(parseFilePath));
+            Console.WriteLine(ListIssues(parseFilePath), args.Length > 1 && args[1] == "all"); // list "all" for all and "open" for just open
         }
         catch (Exception ex)
         {
@@ -46,14 +65,20 @@ public static class Program
         }
     }
 
-    public static string ListIssues(string filePath)
+    public static string ListIssues(string filePath, bool onlyOpenTodos = true)
     {
         try
         {
             Parser parser = new(filePath);
-            var issues = parser.Parse().ToList();
-            var output = $"Found {issues.Count} issues:\n";
-            foreach (var issue in issues)
+            var allIssues = parser.Parse().ToList();
+            var issuesToList = onlyOpenTodos ? allIssues.Where(i => i.State == Model.IssueState.Todo || i.State == Model.IssueState.InProgress).ToList() : allIssues;
+            if (issuesToList.Count == 0)
+            {
+                return onlyOpenTodos ? "no open issues" : "no issues";
+            }
+            var issueType = onlyOpenTodos ? "open issues" : "issues";
+            var output = $"Found {issuesToList.Count} {issueType}:\n";
+            foreach (var issue in issuesToList)
             {
                 output += $"  {issue.Id}: {issue.Title} ({issue.State}) [{issue.Priority}]\n";
             }
