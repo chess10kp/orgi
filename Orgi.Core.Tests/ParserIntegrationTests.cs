@@ -18,7 +18,6 @@ public class ParserIntegrationTests
   :PROPERTIES:
   :ID: auth-001
   :TITLE: Implement user authentication
-  :DESCRIPTION: Add JWT-based authentication with refresh tokens
   :CREATED: <2025-12-18 Thu 09:00>
   :ASSIGNEE: alice@example.com
   :ESTIMATED_HOURS: 16
@@ -34,7 +33,6 @@ public class ParserIntegrationTests
   :PROPERTIES:
   :ID: db-001
   :TITLE: Design database schema
-  :DESCRIPTION: Create ERD and migration scripts for user and project tables
   :CREATED: <2025-12-17 Wed 14:30>
   :ASSIGNEE: bob@example.com
   :ESTIMATED_HOURS: 8
@@ -48,7 +46,6 @@ public class ParserIntegrationTests
   :PROPERTIES:
   :ID: setup-001
   :TITLE: Setup development environment
-  :DESCRIPTION: Configure Docker, databases, and CI/CD pipeline
   :CREATED: <2025-12-15 Mon 10:00>
   :COMPLETED: <2025-12-16 Tue 17:30>
   :ASSIGNEE: charlie@example.com
@@ -182,7 +179,6 @@ public class ParserIntegrationTests
   :PROPERTIES:
   :ID: prod-db-fix-001
   :TITLE: Critical: Fix production database connection
-  :DESCRIPTION: Production servers cannot connect to the primary database cluster
   :CREATED: <2025-12-18 Thu 02:00>
   :ASSIGNEE: oncall@example.com
   :ESTIMATED_HOURS: 4
@@ -199,7 +195,6 @@ public class ParserIntegrationTests
   :PROPERTIES:
   :ID: rate-limit-001
   :TITLE: Implement rate limiting
-  :DESCRIPTION: Add rate limiting to prevent API abuse and ensure fair usage
   :CREATED: <2025-12-17 Wed 10:30>
   :ASSIGNEE: backend-team@example.com
   :ESTIMATED_HOURS: 12
@@ -232,7 +227,6 @@ public class ParserIntegrationTests
    :PROPERTIES:
    :ID: security-audit-001
    :TITLE: Q4 Security Audit
-   :DESCRIPTION: Perform comprehensive security audit of the application
    :CREATED: <2025-12-15 Mon 09:00>
    :ASSIGNEE: security-team@example.com
    :ESTIMATED_HOURS: 40
@@ -253,7 +247,6 @@ public class ParserIntegrationTests
     :PROPERTIES:
     :ID: perf-opt-001
     :TITLE: Optimize database queries
-    :DESCRIPTION: Profile and optimize slow database queries identified in monitoring
     :CREATED: <2025-12-14 Sun 11:00>
     :ASSIGNEE: dba@example.com
     :ESTIMATED_HOURS: 16

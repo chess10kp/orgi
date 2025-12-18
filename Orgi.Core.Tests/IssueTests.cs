@@ -44,9 +44,9 @@ public class IssueTests
         // Arrange
         var properties = new Dictionary<string, string>
         {
-            ["id"] = "test-001",
-            ["title"] = "Test Issue",
-            ["description"] = "Test description",
+            ["ID"] = "test-001",
+            ["TITLE"] = "Test Issue",
+            ["DESCRIPTION"] = "Test description",
             ["created_at"] = "<2025-09-12 Fri 14:30>",
             ["priority"] = "A",
             ["tags"] = "urgent:bug"
@@ -71,8 +71,8 @@ public class IssueTests
         // Arrange
         var properties = new Dictionary<string, string>
         {
-            ["id"] = "test-001",
-            ["title"] = "Test Issue"
+            ["ID"] = "test-001",
+            ["TITLE"] = "Test Issue"
             // Missing description and created_at
         };
         var entry = new OrgEntry("Test Issue", IssueState.Todo, properties, "Body text");
@@ -87,9 +87,9 @@ public class IssueTests
         // Arrange
         var properties = new Dictionary<string, string>
         {
-            ["id"] = "test-001",
-            ["title"] = "Test Issue",
-            ["description"] = "Test description",
+            ["ID"] = "test-001",
+            ["TITLE"] = "Test Issue",
+            ["DESCRIPTION"] = "Test description",
             ["created_at"] = "invalid-timestamp"
         };
         var entry = new OrgEntry("Test Issue", IssueState.Todo, properties, "Body text");

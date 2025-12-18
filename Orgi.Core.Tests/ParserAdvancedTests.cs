@@ -98,7 +98,6 @@ public class ParserAdvancedTests
   :PROPERTIES:
   :ID: multiline-001
   :TITLE: Multi-line Body Issue
-  :DESCRIPTION: Issue with multi-line body
   :CREATED: <2025-12-18 Thu>
   :END:
 
@@ -228,7 +227,7 @@ public class ParserAdvancedTests
             // Assert
             Assert.Single(issues);
             Assert.Equal(2025, issues.First().CreatedAt.Year);
-            Assert.Equal(12, issues.First().CreatedAt.Day);
+            Assert.Equal(18, issues.First().CreatedAt.Day);
         }
         finally
         {
