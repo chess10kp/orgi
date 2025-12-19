@@ -29,6 +29,31 @@ public class Issue
     public IReadOnlyList<string> Tags { get; set; } = new List<string>();
     public IReadOnlyDictionary<string, string> Properties { get; init; }
 
+    /// <summary>
+    /// Gets whether this issue has a source file reference
+    /// </summary>
+    public bool HasSourceReference => Properties.ContainsKey("SOURCE_FILE");
+
+    /// <summary>
+    /// Gets the source file path if this issue was gathered from source code
+    /// </summary>
+    public string? SourceFile => HasSourceReference ? Properties["SOURCE_FILE"] : null;
+
+    /// <summary>
+    /// Gets the source line number if this issue was gathered from source code
+    /// </summary>
+    public int? SourceLine => HasSourceReference && Properties.TryGetValue("SOURCE_LINE", out var lineStr) && int.TryParse(lineStr, out var line) ? line : null;
+
+    /// <summary>
+    /// Gets the source column number if this issue was gathered from source code
+    /// </summary>
+    public int? SourceColumn => HasSourceReference && Properties.TryGetValue("SOURCE_COLUMN", out var colStr) && int.TryParse(colStr, out var col) ? col : null;
+
+    /// <summary>
+    /// Gets the source UUID for tracking changes if this issue was gathered from source code
+    /// </summary>
+    public string? SourceUuid => HasSourceReference && Properties.TryGetValue("SOURCE_UUID", out var uuid) ? uuid : null;
+
     public Issue(string id, string title, string description, DateTime createdAt, IssueState state = IssueState.Todo, Priority priority = Priority.None, IEnumerable<string>? tags = null, IReadOnlyDictionary<string, string>? properties = null)
     {
         Id = id ?? throw new ArgumentNullException(nameof(id));
@@ -41,7 +66,19 @@ public class Issue
         Properties = properties ?? new Dictionary<string, string>();
     }
 
-    public override string ToString() => $"[{Id}] {Title} ({State}) [{Priority}] {string.Join(" ", Tags.Select(t => $":{t}:"))}";
+    public override string ToString()
+    {
+        var sourceInfo = HasSourceReference ? $" ({SourceFile}:{SourceLine})" : "";
+        return $"[{Id}] {Title} ({State}) [{Priority}] {string.Join(" ", Tags.Select(t => $":{t}:"))}{sourceInfo}";
+    }
+
+    /// <summary>
+    /// Generates a compact UUID for identifying gathered issues
+    /// </summary>
+    public static string GenerateUuid()
+    {
+        return Guid.NewGuid().ToString("N")[..8];
+    }
 
     public static Issue FromOrgEntry(OrgEntry entry)
     {

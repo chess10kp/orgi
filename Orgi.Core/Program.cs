@@ -2,6 +2,8 @@ using Orgi.Core.Parsing;
 using System.Diagnostics;
 using System.IO;
 using Orgi.Core.Model;
+using Orgi.Core.Sync;
+using Orgi.Core.Discovery;
 
 namespace Orgi.Core;
 
@@ -65,8 +67,22 @@ public static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "gather")
+            {
+                var gatherArgs = args.Skip(1).ToArray();
+                GatherCommand.Execute(gatherArgs);
+                return;
+            }
+
+            if (args.Length > 0 && args[0] == "sync")
+            {
+                var syncArgs = args.Skip(1).ToArray();
+                SyncCommand.Execute(syncArgs);
+                return;
+            }
+
             // Handle unknown command
-            if (args.Length > 0 && !File.Exists(args[0]) && args[0] != "list" && args[0] != "add")
+            if (args.Length > 0 && !File.Exists(args[0]) && args[0] != "list" && args[0] != "add" && args[0] != "gather" && args[0] != "sync")
             {
                 Console.Error.WriteLine($"Error: Unknown command '{args[0]}'");
                 Console.Error.WriteLine("Use 'orgi --help' for usage information");
@@ -275,6 +291,8 @@ COMMANDS:
     init                    Initialize a new orgi repository
     list [all|open] [file]  List issues
     add [file] [OPTIONS]    Add a new issue
+    gather [OPTIONS]        Gather TODOs from source code files
+    sync [OPTIONS]          Sync orgi issues with source code
     --help, -h              Show this help message
     --version, -v           Show version information
 
@@ -288,6 +306,14 @@ ADD COMMAND:
     orgi add               Add new issue interactively
     orgi add <file>        Add new issue to specified file
 
+GATHER COMMAND:
+    orgi gather                         Gather TODOs from current directory
+    orgi gather --dry-run              Show what would be gathered without making changes
+
+SYNC COMMAND:
+    orgi sync                          Sync completed issues back to source files
+    orgi sync --auto-confirm           Remove all completed TODOs without confirmation
+
 For more information, visit: https://github.com/your-repo/orgi
 ";
         Console.WriteLine(helpText.Trim());
@@ -300,3 +326,99 @@ For more information, visit: https://github.com/your-repo/orgi
     }
 }
 
+/// <summary>
+/// Handles the gather command
+/// </summary>
+public static class GatherCommand
+{
+    public static void Execute(string[] args)
+    {
+        try
+        {
+            var dryRun = args.Contains("--dry-run");
+            var sourceDir = Directory.GetCurrentDirectory();
+            var orgFile = ".org/orgi.org";
+
+            // Ensure orgi repository is initialized
+            if (!File.Exists(orgFile))
+            {
+                Console.Error.WriteLine("Error: Orgi repository not initialized. Run 'orgi init' first.");
+                Environment.Exit(1);
+            }
+
+            Console.WriteLine("Scanning source files for TODOs...");
+            var synchronizer = new IssueSynchronizer();
+            var result = synchronizer.GatherFromSource(sourceDir, orgFile, dryRun);
+
+            Console.WriteLine($"\nGather Results:");
+            Console.WriteLine($"  Source files scanned: {result.SourceFilesScanned}");
+            Console.WriteLine($"  TODOs found: {result.TodosFound}");
+            Console.WriteLine($"  Existing orgi issues: {result.ExistingIssuesFound}");
+            Console.WriteLine($"  Already matched: {result.MatchedIssues}");
+            Console.WriteLine($"  New issues created: {result.NewIssuesCreated}");
+            Console.WriteLine($"  Source files modified: {result.FilesModified}");
+
+            if (dryRun)
+            {
+                Console.WriteLine("\nThis was a dry run. No files were modified.");
+                Console.WriteLine("Run without --dry-run to actually gather TODOs.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error during gather: {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+}
+
+/// <summary>
+/// Handles the sync command
+/// </summary>
+public static class SyncCommand
+{
+    public static void Execute(string[] args)
+    {
+        try
+        {
+            var autoConfirm = args.Contains("--auto-confirm");
+            var orgFile = ".org/orgi.org";
+
+            // Ensure orgi repository is initialized
+            if (!File.Exists(orgFile))
+            {
+                Console.Error.WriteLine("Error: Orgi repository not initialized. Run 'orgi init' first.");
+                Environment.Exit(1);
+            }
+
+            Console.WriteLine("Syncing completed orgi issues back to source files...");
+            var synchronizer = new IssueSynchronizer();
+            var result = synchronizer.SyncToSource(orgFile, autoConfirm);
+
+            Console.WriteLine($"\nSync Results:");
+            Console.WriteLine($"  Total issues checked: {result.TotalIssuesChecked}");
+            Console.WriteLine($"  Completed issues with source references: {result.CompletedSourceIssuesFound}");
+            Console.WriteLine($"  TODOs removed from source: {result.TodosRemoved}");
+            Console.WriteLine($"  TODOs skipped: {result.TodosSkipped}");
+            Console.WriteLine($"  Source files modified: {result.FilesModified}");
+
+            if (result.TodosRemoved > 0)
+            {
+                Console.WriteLine("\nCompleted TODOs have been removed from source files.");
+            }
+            else if (result.CompletedSourceIssuesFound > 0)
+            {
+                Console.WriteLine("\nNo TODOs were removed. All completed issues were skipped.");
+            }
+            else
+            {
+                Console.WriteLine("\nNo completed issues with source references found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error during sync: {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+}

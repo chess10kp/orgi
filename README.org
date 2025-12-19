@@ -70,6 +70,26 @@ orgi add [file] [-b body]
 
 Prompts for title, priority (A/B/C), state (TODO/INPROGRESS/DONE/KILL), tags, and body.
 
+*** Gather TODOs from source code
+
+#+begin_src bash
+orgi gather [--dry-run]
+#+end_src
+
+- ~--dry-run~: Show what would be gathered without making changes
+
+Gathers TODOs from source code files in the current directory and adds them as issues to ~.org/orgi.org~.
+
+*** Sync issues back to source
+
+#+begin_src bash
+orgi sync [--auto-confirm]
+#+end_src
+
+- ~--auto-confirm~: Remove all completed TODOs without confirmation
+
+Syncs completed issues back to source files, removing the corresponding TODOs.
+
 *** Default behavior
 
 - ~orgi~: List open issues from ~.org/orgi.org~

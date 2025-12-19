@@ -1,0 +1,15 @@
+* TODO Implement error handling
+  :PROPERTIES:
+  :ID: gather-20251218-192023-ba4a88ef
+  :TITLE: Implement error handling
+  :CREATED: <2025-12-18 Thu 19:20>
+  :SOURCE_FILE: Program.cs
+  :SOURCE_LINE: 5
+  :SOURCE_COLUMN: 5
+  :SOURCE_UUID: 938DB909
+  :PRIORITY: B
+  :TAGS: gathered:cs
+  :END:
+
+  TODO: Implement error handling
+

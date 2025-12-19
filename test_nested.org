@@ -1,0 +1,35 @@
+* TODO Parent issue
+  :PROPERTIES:
+  :ID: parent-001
+  :TITLE: Parent issue
+  :CREATED: <2025-12-18 Thu>
+  :END:
+
+  This is a parent issue.
+
+** TODO Sub-task 1
+  :PROPERTIES:
+  :ID: sub-001
+  :TITLE: Sub-task 1
+  :CREATED: <2025-12-18 Thu>
+  :END:
+
+  This is a sub-task.
+
+** TODO Sub-task 2
+  :PROPERTIES:
+  :ID: sub-002
+  :TITLE: Sub-task 2
+  :CREATED: <2025-12-18 Thu>
+  :END:
+
+  This is another sub-task.
+
+* TODO Another parent issue
+  :PROPERTIES:
+  :ID: parent-002
+  :TITLE: Another parent issue
+  :CREATED: <2025-12-18 Thu>
+  :END:
+
+  This is another parent issue at same level.

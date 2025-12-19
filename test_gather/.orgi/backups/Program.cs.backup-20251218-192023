@@ -1,0 +1,10 @@
+using System;
+
+class Program
+{
+    // TODO: Implement error handling
+    static void Main(string[] args)
+    {
+        Console.WriteLine("Hello World!");
+    }
+}
