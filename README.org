@@ -27,6 +27,11 @@ A local first solution for project issues that doesn't need github
    dotnet run --project Orgi.Core
    #+end_src
 
+4. Build orgi
+   #+begin_src bash
+   dotnet publish -c Release -r linux-x64 --self-contained false -o ./publish Orgi.Core/Orgi.Core.csproj
+   #+end_src
+
 *** Using Docker
 
 1. Build the Docker image:
@@ -47,7 +52,7 @@ A local first solution for project issues that doesn't need github
 orgi init
 #+end_src
 
-Creates a ~.org/orgi.org~ file for storing issues.
+Creates a ~.orgi/orgi.orgi~ file for storing issues.
 
 *** List issues
 
@@ -57,7 +62,7 @@ orgi list [all|open] [file]
 
 - ~all~: List all issues (default: open only)
 - ~open~: List only open issues (TODO and INPROGRESS)
-- ~file~: Path to .org file (default: ~.org/orgi.org~)
+- ~file~: Path to .orgi file (default: ~.orgi/orgi.orgi~)
 
 *** Add a new issue
 
@@ -65,7 +70,7 @@ orgi list [all|open] [file]
 orgi add [file] [-b body]
 #+end_src
 
-- ~file~: Path to .org file (default: ~.org/orgi.org~)
+- ~file~: Path to .orgi file (default: ~.orgi/orgi.orgi~)
 - ~-b body~: Body text for the issue
 
 Prompts for title, priority (A/B/C), state (TODO/INPROGRESS/DONE/KILL), tags, and body.
@@ -78,7 +83,7 @@ orgi gather [--dry-run]
 
 - ~--dry-run~: Show what would be gathered without making changes
 
-Gathers TODOs from source code files in the current directory and adds them as issues to ~.org/orgi.org~.
+Gathers TODOs from source code files in the current directory and adds them as issues to ~.orgi/orgi.orgi~.
 
 *** Sync issues back to source
 
@@ -92,7 +97,7 @@ Syncs completed issues back to source files, removing the corresponding TODOs.
 
 *** Default behavior
 
-- ~orgi~: List open issues from ~.org/orgi.org~
+- ~orgi~: List open issues from ~.orgi/orgi.orgi~
 - ~orgi <file>~: List open issues from specified file
 - ~orgi <file> all~: List all issues from specified file
 

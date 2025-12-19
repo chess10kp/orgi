@@ -27,29 +27,29 @@ public static class Program
 
             if (args.Length > 0 && args[0] == "init")
             {
-                var dirPath = ".org";
-                var initFilePath = Path.Combine(dirPath, "orgi.org");
+                var dirPath = ".orgi";
+                var initFilePath = Path.Combine(dirPath, "orgi.orgi");
                 Directory.CreateDirectory(dirPath);
                 File.WriteAllText(initFilePath, "");
-                Console.WriteLine("Initialized orgi repository at .org/orgi.org");
+                Console.WriteLine("Initialized orgi at .orgi/orgi.orgi");
                 return;
             }
 
             if (args.Length > 0 && args[0] == "list")
             {
                 bool onlyOpen = true;
-                string listFilePath = ".org/orgi.org";
+                string listFilePath = ".orgi/orgi.orgi";
                 if (args.Length > 1)
                 {
                     if (args[1] == "all")
                     {
                         onlyOpen = false;
-                        listFilePath = args.Length > 2 ? args[2] : ".org/orgi.org";
+                        listFilePath = args.Length > 2 ? args[2] : ".orgi/orgi.orgi";
                     }
                     else if (args[1] == "open")
                     {
                         onlyOpen = true;
-                        listFilePath = args.Length > 2 ? args[2] : ".org/orgi.org";
+                        listFilePath = args.Length > 2 ? args[2] : ".orgi/orgi.orgi";
                     }
                     else
                     {
@@ -90,7 +90,7 @@ public static class Program
             }
 
             // Default behavior: list issues from default file or provided file
-            var defaultFilePath = ".org/orgi.org";
+            var defaultFilePath = ".orgi/orgi.orgi";
             var parseFilePath = args.Length > 0 ? args[0] : defaultFilePath;
             var listAll = args.Length > 1 && args[1] == "all";
             Console.WriteLine(ListIssues(parseFilePath, !listAll)); // list "all" for all and "open" for just open
@@ -139,7 +139,7 @@ public static class Program
     {
         try
         {
-            var filePath = ".org/orgi.org";
+            var filePath = ".orgi/orgi.orgi";
             string? body = null;
 
             for (int i = 0; i < args.Length; i++)
@@ -297,8 +297,8 @@ COMMANDS:
     --version, -v           Show version information
 
 LIST COMMAND:
-    orgi list               List open issues from .org/orgi.org
-    orgi list all           List all issues from .org/orgi.org
+    orgi list               List open issues from .orgi/orgi.orgi
+    orgi list all           List all issues from .orgi/orgi.orgi
     orgi list <file>        List open issues from specified file
     orgi list all <file>    List all issues from specified file
 
@@ -337,7 +337,7 @@ public static class GatherCommand
         {
             var dryRun = args.Contains("--dry-run");
             var sourceDir = Directory.GetCurrentDirectory();
-            var orgFile = ".org/orgi.org";
+            var orgFile = ".orgi/orgi.orgi";
 
             // Ensure orgi repository is initialized
             if (!File.Exists(orgFile))
@@ -382,7 +382,7 @@ public static class SyncCommand
         try
         {
             var autoConfirm = args.Contains("--auto-confirm");
-            var orgFile = ".org/orgi.org";
+            var orgFile = ".orgi/orgi.orgi";
 
             // Ensure orgi repository is initialized
             if (!File.Exists(orgFile))

@@ -1,0 +1,25 @@
+* TODO Valid issue
+  :PROPERTIES:
+  :ID: test-001
+  :TITLE: Valid issue
+  :CREATED: <2025-12-18 Thu>
+  :END:
+
+  This is a valid issue.
+
+* TODO Invalid issue missing properties
+  :PROPERTIES:
+  :TITLE: Invalid issue
+  :CREATED: <2025-12-18 Thu>
+  :END:
+
+  This issue is missing ID.
+
+* TODO Another valid issue
+  :PROPERTIES:
+  :ID: test-002
+  :TITLE: Another valid issue
+  :CREATED: <2025-12-18 Thu>
+  :END:
+
+  This is another valid issue.
