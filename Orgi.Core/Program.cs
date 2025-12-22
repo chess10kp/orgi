@@ -54,8 +54,9 @@ public static class Program
                     else
                     {
                         listFilePath = args[1];
-                    }
-                }
+    }
+}
+
                 Console.WriteLine(ListIssues(listFilePath, onlyOpen));
                 return;
             }
@@ -81,8 +82,15 @@ public static class Program
                 return;
             }
 
+            if (args.Length > 0 && args[0] == "done")
+            {
+                var doneArgs = args.Skip(1).ToArray();
+                DoneCommand.Execute(doneArgs);
+                return;
+            }
+
             // Handle unknown command
-            if (args.Length > 0 && !File.Exists(args[0]) && args[0] != "list" && args[0] != "add" && args[0] != "gather" && args[0] != "sync")
+            if (args.Length > 0 && !File.Exists(args[0]) && args[0] != "list" && args[0] != "add" && args[0] != "gather" && args[0] != "sync" && args[0] != "done")
             {
                 Console.Error.WriteLine($"Error: Unknown command '{args[0]}'");
                 Console.Error.WriteLine("Use 'orgi --help' for usage information");
@@ -90,7 +98,7 @@ public static class Program
             }
 
             // Default behavior: list issues from default file or provided file
-            var defaultFilePath = ".orgi/orgi.orgi";
+            var  defaultFilePath = ".orgi/orgi.org";
             var parseFilePath = args.Length > 0 ? args[0] : defaultFilePath;
             var listAll = args.Length > 1 && args[1] == "all";
             Console.WriteLine(ListIssues(parseFilePath, !listAll)); // list "all" for all and "open" for just open
@@ -152,8 +160,9 @@ public static class Program
                 else if (!args[i].StartsWith("-"))
                 {
                     filePath = args[i];
-                }
-            }
+    }
+}
+
 
             Console.Write("Title: ");
             var title = Console.ReadLine()?.Trim();
@@ -279,6 +288,75 @@ public static class Program
         }
     }
 
+    private static string IssueToContent(Issue issue)
+    {
+        var priorityStr = issue.Priority == Priority.None ? "" : $" [#{issue.Priority}]";
+        var tagsStr = issue.Tags.Any() ? " :" + string.Join(":", issue.Tags) + ":" : "";
+        var stateStr = issue.State.ToString().ToUpper();
+        var created = issue.CreatedAt.ToString("<yyyy-MM-dd ddd HH:mm>");
+        var body = issue.Description.Trim();
+
+        var propertiesLines = new List<string>();
+        foreach (var prop in issue.Properties)
+        {
+            if (prop.Key != "tags" && prop.Key != "priority") // handled in headline
+            {
+                propertiesLines.Add($"  :{prop.Key}: {prop.Value}");
+            }
+        }
+        var propertiesBlock = string.Join("\n", propertiesLines);
+
+        var content = $"\n* {stateStr}{priorityStr} {issue.Title}{tagsStr}\n  :PROPERTIES:\n{propertiesBlock}\n  :END:\n\n  {body}\n";
+        return content;
+    }
+
+    /// <summary>
+    /// Handles the done command
+    /// </summary>
+    public static class DoneCommand
+    {
+        public static void Execute(string[] args)
+        {
+            if (args.Length != 1)
+            {
+                Console.Error.WriteLine("Error: 'done' command requires exactly one argument: the issue ID");
+                Console.Error.WriteLine("Usage: orgi done <issue_id>");
+                Environment.Exit(1);
+            }
+
+            var issueId = args[0];
+            var filePath = ".orgi/orgi.orgi";
+
+            try
+            {
+                Parser parser = new(filePath);
+                var issues = parser.Parse().ToList();
+                var issue = issues.FirstOrDefault(i => i.Id == issueId);
+                if (issue == null)
+                {
+                    Console.Error.WriteLine($"Error: Issue with ID '{issueId}' not found.");
+                    Environment.Exit(1);
+                }
+
+                issue.State = IssueState.Done;
+
+                var content = string.Join("", issues.Select(IssueToContent));
+                File.WriteAllText(filePath, content.TrimStart());
+                Console.WriteLine($"Marked issue {issueId} as DONE");
+            }
+            catch (FileNotFoundException)
+            {
+                Console.Error.WriteLine($"Error: Orgi repository not initialized. Run 'orgi init' first.");
+                Environment.Exit(1);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error during done: {ex.Message}");
+                Environment.Exit(1);
+            }
+        }
+    }
+
     private static void ShowHelp()
     {
         var helpText = @"
@@ -287,14 +365,15 @@ Orgi - Command-line tool for managing issues in Org mode files
 USAGE:
     orgi [COMMAND] [OPTIONS]
 
-COMMANDS:
-    init                    Initialize a new orgi repository
-    list [all|open] [file]  List issues
-    add [file] [OPTIONS]    Add a new issue
-    gather [OPTIONS]        Gather TODOs from source code files
-    sync [OPTIONS]          Sync orgi issues with source code
-    --help, -h              Show this help message
-    --version, -v           Show version information
+ COMMANDS:
+     init                    Initialize a new orgi repository
+     list [all|open] [file]  List issues
+     add [file] [OPTIONS]    Add a new issue
+     gather [OPTIONS]        Gather TODOs from source code files
+     sync [OPTIONS]          Sync orgi issues with source code
+     done <issue_id>         Mark an issue as DONE
+     --help, -h              Show this help message
+     --version, -v           Show version information
 
 LIST COMMAND:
     orgi list               List open issues from .orgi/orgi.orgi
@@ -310,18 +389,19 @@ GATHER COMMAND:
     orgi gather                         Gather TODOs from current directory
     orgi gather --dry-run              Show what would be gathered without making changes
 
-SYNC COMMAND:
-    orgi sync                          Sync completed issues back to source files
-    orgi sync --auto-confirm           Remove all completed TODOs without confirmation
+ SYNC COMMAND:
+     orgi sync                          Sync completed issues back to source files
+     orgi sync --auto-confirm           Remove all completed TODOs without confirmation
 
-For more information, visit: https://github.com/your-repo/orgi
+ DONE COMMAND:
+     orgi done <issue_id>               Mark an issue as DONE
 ";
         Console.WriteLine(helpText.Trim());
     }
 
     private static void ShowVersion()
     {
-        Console.WriteLine("Orgi version 1.0.0");
+        Console.WriteLine("Orgi version 0.1.2");
         Console.WriteLine("A command-line tool for managing issues in Org mode files");
     }
 }

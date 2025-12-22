@@ -3,7 +3,7 @@ using Orgi.Core.Model;
 namespace Orgi.Core.Rewriting;
 
 /// <summary>
-/// Rewrites source files to insert UUID references in TODO items
+/// Really couldn't come up with a better name ngl
 /// </summary>
 public class SourceFileRewriter
 {
@@ -62,9 +62,6 @@ public class SourceFileRewriter
         }
     }
 
-    /// <summary>
-    /// Removes a TODO line from the source file
-    /// </summary>
     public RewriteResult RemoveTodoLine(string filePath, int lineNumber)
     {
         if (!File.Exists(filePath))

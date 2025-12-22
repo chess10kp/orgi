@@ -63,7 +63,7 @@ public class Issue
         State = state;
         Priority = priority;
         Tags = tags?.ToList() ?? new List<string>();
-        Properties = properties ?? new Dictionary<string, string>();
+        Properties = properties != null ? new Dictionary<string, string>(properties) : new Dictionary<string, string>();
     }
 
     public override string ToString()

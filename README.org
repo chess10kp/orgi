@@ -95,6 +95,14 @@ orgi sync [--auto-confirm]
 
 Syncs completed issues back to source files, removing the corresponding TODOs.
 
+*** Mark an issue as done
+
+#+begin_src bash
+orgi done <issue_id>
+#+end_src
+
+Marks the issue with the given ID as DONE.
+
 *** Default behavior
 
 - ~orgi~: List open issues from ~.orgi/orgi.orgi~
