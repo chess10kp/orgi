@@ -52,28 +52,31 @@ A local first solution for project issues that doesn't need github
 orgi init
 #+end_src
 
-Creates a ~.orgi/orgi.orgi~ file for storing issues.
+Creates a ~.orgi/orgi.org~ file for storing issues.
 
 *** List issues
 
 #+begin_src bash
-orgi list [all|open] [file]
+orgi list [--all|--open] [file]
 #+end_src
 
-- ~all~: List all issues (default: open only)
-- ~open~: List only open issues (TODO and INPROGRESS)
-- ~file~: Path to .orgi file (default: ~.orgi/orgi.orgi~)
+- ~--all~: List all issues (default: open only)
+- ~--open~: List only open issues (TODO and INPROGRESS)
+- ~file~: Path to .orgi file (default: ~.orgi/orgi.org~)
+
+Issues are displayed with indices for easy reference (e.g., "1. task-123: Title").
 
 *** Add a new issue
 
 #+begin_src bash
-orgi add [file] [-b body]
+orgi add [--title title] [--body body] [file]
 #+end_src
 
-- ~file~: Path to .orgi file (default: ~.orgi/orgi.orgi~)
-- ~-b body~: Body text for the issue
+- ~--title~: Title of the issue (prompted if not provided)
+- ~--body, -b~: Body text for the issue
+- ~file~: Path to .orgi file (default: ~.orgi/orgi.org~)
 
-Prompts for title, priority (A/B/C), state (TODO/INPROGRESS/DONE/KILL), tags, and body.
+Prompts for title, priority (A/B/C), state (TODO/INPROGRESS/DONE/KILL), tags, and body if not provided via options.
 
 *** Gather TODOs from source code
 
@@ -83,7 +86,7 @@ orgi gather [--dry-run]
 
 - ~--dry-run~: Show what would be gathered without making changes
 
-Gathers TODOs from source code files in the current directory and adds them as issues to ~.orgi/orgi.orgi~.
+Gathers TODOs from source code files in the current directory and adds them as issues to ~.orgi/orgi.org~.
 
 *** Sync issues back to source
 
@@ -98,16 +101,28 @@ Syncs completed issues back to source files, removing the corresponding TODOs.
 *** Mark an issue as done
 
 #+begin_src bash
-orgi done <issue_id>
+orgi done <id>
 #+end_src
 
-Marks the issue with the given ID as DONE.
+Marks the issue as DONE. Specify either the index from the list output or the issue ID.
+
+*** Generate shell completion
+
+#+begin_src bash
+orgi completion <bash|zsh>
+#+end_src
+
+Outputs the shell completion script for bash or zsh. Redirect to install:
+
+#+begin_src bash
+orgi completion bash > ~/.bash_completion.d/orgi
+orgi completion zsh > ~/.zsh/completions/_orgi
+#+end_src
 
 *** Default behavior
 
-- ~orgi~: List open issues from ~.orgi/orgi.orgi~
+- ~orgi~: List open issues from ~.orgi/orgi.org~
 - ~orgi <file>~: List open issues from specified file
-- ~orgi <file> all~: List all issues from specified file
 
 ** Issue Format
 

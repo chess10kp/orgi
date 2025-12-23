@@ -1,4 +1,5 @@
 using Orgi.Core.Parsing;
+using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
 using Orgi.Core.Model;
@@ -9,105 +10,299 @@ namespace Orgi.Core;
 
 public static class Program
 {
-    public static void Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
-        try
+        var rootCommand = new RootCommand("Orgi - Command-line tool for managing issues in Org mode files");
+
+        // Positional argument for file
+        var fileArgument = new Argument<FileInfo>(
+            "file",
+            description: "Path to the .orgi file",
+            getDefaultValue: () => new FileInfo(".orgi/orgi.org"));
+        rootCommand.AddArgument(fileArgument);
+
+        // Global options
+        var fileOption = new Option<FileInfo>(
+            "--file",
+            description: "Path to the .orgi file",
+            getDefaultValue: () => new FileInfo(".orgi/orgi.org"));
+        fileOption.AddAlias("-f");
+        rootCommand.AddGlobalOption(fileOption);
+
+        // Default handler for root command
+        rootCommand.SetHandler((file) =>
         {
-            if (args.Length > 0 && (args[0] == "--help" || args[0] == "-h"))
+            try
             {
-                ShowHelp();
-                return;
+                Console.WriteLine(ListIssues(file.FullName, true));
             }
-
-            if (args.Length > 0 && (args[0] == "--version" || args[0] == "-v"))
+            catch (Exception ex)
             {
-                ShowVersion();
-                return;
-            }
-
-            if (args.Length > 0 && args[0] == "init")
-            {
-                var dirPath = ".orgi";
-                var initFilePath = Path.Combine(dirPath, "orgi.orgi");
-                Directory.CreateDirectory(dirPath);
-                File.WriteAllText(initFilePath, "");
-                Console.WriteLine("Initialized orgi at .orgi/orgi.orgi");
-                return;
-            }
-
-            if (args.Length > 0 && args[0] == "list")
-            {
-                bool onlyOpen = true;
-                string listFilePath = ".orgi/orgi.orgi";
-                if (args.Length > 1)
-                {
-                    if (args[1] == "all")
-                    {
-                        onlyOpen = false;
-                        listFilePath = args.Length > 2 ? args[2] : ".orgi/orgi.orgi";
-                    }
-                    else if (args[1] == "open")
-                    {
-                        onlyOpen = true;
-                        listFilePath = args.Length > 2 ? args[2] : ".orgi/orgi.orgi";
-                    }
-                    else
-                    {
-                        listFilePath = args[1];
-    }
-}
-
-                Console.WriteLine(ListIssues(listFilePath, onlyOpen));
-                return;
-            }
-
-            if (args.Length > 0 && args[0] == "add")
-            {
-                var addArgs = args.Skip(1).ToArray();
-                AddIssue(addArgs);
-                return;
-            }
-
-            if (args.Length > 0 && args[0] == "gather")
-            {
-                var gatherArgs = args.Skip(1).ToArray();
-                GatherCommand.Execute(gatherArgs);
-                return;
-            }
-
-            if (args.Length > 0 && args[0] == "sync")
-            {
-                var syncArgs = args.Skip(1).ToArray();
-                SyncCommand.Execute(syncArgs);
-                return;
-            }
-
-            if (args.Length > 0 && args[0] == "done")
-            {
-                var doneArgs = args.Skip(1).ToArray();
-                DoneCommand.Execute(doneArgs);
-                return;
-            }
-
-            // Handle unknown command
-            if (args.Length > 0 && !File.Exists(args[0]) && args[0] != "list" && args[0] != "add" && args[0] != "gather" && args[0] != "sync" && args[0] != "done")
-            {
-                Console.Error.WriteLine($"Error: Unknown command '{args[0]}'");
-                Console.Error.WriteLine("Use 'orgi --help' for usage information");
+                Console.Error.WriteLine($"Error: {ex.Message}");
                 Environment.Exit(1);
             }
+        }, fileArgument);
 
-            // Default behavior: list issues from default file or provided file
-            var  defaultFilePath = ".orgi/orgi.org";
-            var parseFilePath = args.Length > 0 ? args[0] : defaultFilePath;
-            var listAll = args.Length > 1 && args[1] == "all";
-            Console.WriteLine(ListIssues(parseFilePath, !listAll)); // list "all" for all and "open" for just open
-        }
-        catch (Exception ex)
+        // Init command
+        var initCommand = new Command("init", "Initialize a new orgi repository");
+        initCommand.SetHandler(() =>
         {
-            Console.Error.WriteLine($"Error: {ex.Message}");
-            Environment.Exit(1);
-        }
+            var dirPath = ".orgi";
+            var initFilePath = Path.Combine(dirPath, "orgi.org");
+            Directory.CreateDirectory(dirPath);
+            File.WriteAllText(initFilePath, "");
+            Console.WriteLine("Initialized orgi at .orgi/orgi.org");
+        });
+        rootCommand.AddCommand(initCommand);
+
+        // List command
+        var listCommand = new Command("list", "List issues");
+        var allOption = new Option<bool>("--all", "List all issues (default: open only)");
+        var openOption = new Option<bool>("--open", "List only open issues (TODO and INPROGRESS)");
+        listCommand.AddOption(allOption);
+        listCommand.AddOption(openOption);
+        listCommand.SetHandler((all, open, file) =>
+        {
+            try
+            {
+                bool onlyOpen = !all && !open; // default to open if neither specified
+                Console.WriteLine(ListIssues(file.FullName, onlyOpen));
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error: {ex.Message}");
+                Environment.Exit(1);
+            }
+        }, allOption, openOption, fileOption);
+        rootCommand.AddCommand(listCommand);
+
+        // Add command
+        var addCommand = new Command("add", "Add a new issue");
+        var titleOption = new Option<string?>("--title", "Title of the issue");
+        var bodyOption = new Option<string?>("--body", "Body text for the issue");
+        bodyOption.AddAlias("-b");
+        addCommand.AddOption(titleOption);
+        addCommand.AddOption(bodyOption);
+        addCommand.SetHandler((title, body, file) =>
+        {
+            try
+            {
+                var addArgs = new List<string>();
+                if (file != null && file.FullName != ".orgi/orgi.org")
+                {
+                    addArgs.Add(file.FullName);
+                }
+                if (body != null)
+                {
+                    addArgs.Add("-b");
+                    addArgs.Add(body);
+                }
+                // If title provided, we need to modify AddIssue to accept it
+                if (title != null)
+                {
+                    // For now, assume interactive, but to make non-interactive, need to update AddIssue
+                    Console.Error.WriteLine("Non-interactive add with --title not implemented yet. Use interactive mode.");
+                    Environment.Exit(1);
+                }
+                else
+                {
+                    AddIssue(addArgs.ToArray());
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error: {ex.Message}");
+                Environment.Exit(1);
+            }
+        }, titleOption, bodyOption, fileOption);
+        rootCommand.AddCommand(addCommand);
+
+        // Gather command
+        var gatherCommand = new Command("gather", "Gather TODOs from source code files");
+        var dryRunOption = new Option<bool>("--dry-run", "Show what would be gathered without making changes");
+        gatherCommand.AddOption(dryRunOption);
+        gatherCommand.SetHandler((dryRun) =>
+        {
+            try
+            {
+                var gatherArgs = dryRun ? new[] { "--dry-run" } : Array.Empty<string>();
+                GatherCommand.Execute(gatherArgs);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error: {ex.Message}");
+                Environment.Exit(1);
+            }
+        }, dryRunOption);
+        rootCommand.AddCommand(gatherCommand);
+
+        // Sync command
+        var syncCommand = new Command("sync", "Sync completed issues back to source files");
+        var autoConfirmOption = new Option<bool>("--auto-confirm", "Remove all completed TODOs without confirmation");
+        syncCommand.AddOption(autoConfirmOption);
+        syncCommand.SetHandler((autoConfirm) =>
+        {
+            try
+            {
+                var syncArgs = autoConfirm ? new[] { "--auto-confirm" } : Array.Empty<string>();
+                SyncCommand.Execute(syncArgs);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error: {ex.Message}");
+                Environment.Exit(1);
+            }
+        }, autoConfirmOption);
+        rootCommand.AddCommand(syncCommand);
+
+        // Done command
+        var doneCommand = new Command("done", "Mark an issue as DONE");
+        var idArgument = new Argument<string>("id", "Issue index or ID to mark as done");
+        doneCommand.AddArgument(idArgument);
+        doneCommand.SetHandler((id) =>
+        {
+            try
+            {
+                DoneCommand.Execute(new[] { id });
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error: {ex.Message}");
+                Environment.Exit(1);
+            }
+        }, idArgument);
+        rootCommand.AddCommand(doneCommand);
+
+        // Completion command
+        var completionCommand = new Command("completion", "Generate shell completion scripts");
+        var shellArgument = new Argument<string>("shell", "Shell type (bash or zsh)");
+        completionCommand.AddArgument(shellArgument);
+        completionCommand.SetHandler((shell) =>
+        {
+            if (shell == "bash")
+            {
+                // Output bash completion script
+                Console.WriteLine(@"
+# Bash completion for orgi
+_orgi() {
+    local cur prev words cword
+    _get_comp_words_by_ref -n : cur prev words cword
+
+    case $cword in
+        1)
+            COMPREPLY=( $(compgen -W 'init list add gather sync done --help --version' -- ""$cur"") )
+            ;;
+        2)
+            case ${words[1]} in
+                list)
+                    COMPREPLY=( $(compgen -W '--all --open' -- ""$cur"") )
+                    ;;
+                add)
+                    COMPREPLY=( $(compgen -W '--title --body' -- ""$cur"") )
+                    ;;
+                gather)
+                    COMPREPLY=( $(compgen -W '--dry-run' -- ""$cur"") )
+                    ;;
+                sync)
+                    COMPREPLY=( $(compgen -W '--auto-confirm' -- ""$cur"") )
+                    ;;
+                done)
+                    # Free input for index or ID
+                    ;;
+                *)
+                    COMPREPLY=( $(compgen -f -X '!*.org' -- ""$cur"") )  # File completion for positional file
+                    ;;
+            esac
+            ;;
+        3)
+            case ${words[1]} in
+                add)
+                    if [[ ${words[2]} == '--body' || ${words[2]} == '-b' ]]; then
+                        # Body text, no completion
+                        :
+                    fi
+                    ;;
+                *)
+                    COMPREPLY=( $(compgen -f -X '!*.org' -- ""$cur"") )
+                    ;;
+            esac
+            ;;
+        *)
+            COMPREPLY=( $(compgen -f -X '!*.org' -- ""$cur"") )
+            ;;
+    esac
+}
+
+complete -F _orgi orgi
+".Trim());
+            }
+            else if (shell == "zsh")
+            {
+                // Output zsh completion script
+                Console.WriteLine(@"
+# Zsh completion for orgi
+_orgi() {
+    _arguments -C \
+        '1: :->command' \
+        '*:: :->args'
+
+    case $state in
+        command)
+            _values 'orgi command' \
+                'init[initialize orgi repository]' \
+                'list[list issues]' \
+                'add[add new issue]' \
+                'gather[gather TODOs from source]' \
+                'sync[sync issues back to source]' \
+                'done[mark issue as done]' \
+                '--help[show help]' \
+                '--version[show version]'
+            ;;
+        args)
+            case $line[1] in
+                list)
+                    _arguments \
+                        '--all[list all issues]' \
+                        '--open[list open issues]' \
+                        '1:: :_files -g ""*.org""'
+                    ;;
+                add)
+                    _arguments \
+                        '--title[title of the issue]:title:' \
+                        '(--body -b)'{--body,-b}'[body text]:body:' \
+                        '1:: :_files -g ""*.org""'
+                    ;;
+                gather)
+                    _arguments \
+                        '--dry-run[show what would be gathered]'
+                    ;;
+                sync)
+                    _arguments \
+                        '--auto-confirm[remove without confirmation]'
+                    ;;
+                done)
+                    _message 'index or issue ID'
+                    ;;
+                *)
+                    _files -g '*.org'
+                    ;;
+            esac
+            ;;
+    esac
+}
+".Trim());
+            }
+            else
+            {
+                Console.Error.WriteLine("Unsupported shell. Supported: bash, zsh");
+                Environment.Exit(1);
+            }
+        }, shellArgument);
+        rootCommand.AddCommand(completionCommand);
+
+
+
+        return await rootCommand.InvokeAsync(args);
     }
 
     public static string ListIssues(string filePath, bool onlyOpenTodos = true)
@@ -123,9 +318,11 @@ public static class Program
             }
             var issueType = onlyOpenTodos ? "open issues" : "issues";
             var output = $"Found {issuesToList.Count} {issueType}:\n";
+            int index = 1;
             foreach (var issue in issuesToList)
             {
-                output += $"  {issue.Id}: {issue.Title} ({issue.State}) [{issue.Priority}]\n";
+                output += $"  {index}. {issue.Id}: {issue.Title} ({issue.State}) [{issue.Priority}]\n";
+                index++;
             }
             return output.TrimEnd();
         }
@@ -147,7 +344,7 @@ public static class Program
     {
         try
         {
-            var filePath = ".orgi/orgi.orgi";
+            var filePath = ".orgi/orgi.org";
             string? body = null;
 
             for (int i = 0; i < args.Length; i++)
@@ -319,30 +516,50 @@ public static class Program
         {
             if (args.Length != 1)
             {
-                Console.Error.WriteLine("Error: 'done' command requires exactly one argument: the issue ID");
-                Console.Error.WriteLine("Usage: orgi done <issue_id>");
+                Console.Error.WriteLine("Error: 'done' command requires exactly one argument: the issue index or ID");
+                Console.Error.WriteLine("Usage: orgi done <index|issue_id>");
                 Environment.Exit(1);
             }
 
-            var issueId = args[0];
-            var filePath = ".orgi/orgi.orgi";
+            var arg = args[0];
+            var filePath = ".orgi/orgi.org";
 
             try
             {
                 Parser parser = new(filePath);
-                var issues = parser.Parse().ToList();
-                var issue = issues.FirstOrDefault(i => i.Id == issueId);
-                if (issue == null)
+                var allIssues = parser.Parse().ToList();
+                var openIssues = allIssues.Where(i => i.State == IssueState.Todo || i.State == IssueState.InProgress).ToList();
+                Issue? issue = null;
+                string identifier;
+
+                if (int.TryParse(arg, out int index))
                 {
-                    Console.Error.WriteLine($"Error: Issue with ID '{issueId}' not found.");
-                    Environment.Exit(1);
+                    // Treat as 1-based index into open issues
+                    if (index < 1 || index > openIssues.Count)
+                    {
+                        Console.Error.WriteLine($"Error: Index '{index}' is out of range. Valid range: 1-{openIssues.Count}");
+                        Environment.Exit(1);
+                    }
+                    issue = openIssues[index - 1];
+                    identifier = $"{index} ({issue.Id})";
+                }
+                else
+                {
+                    // Treat as ID
+                    issue = allIssues.FirstOrDefault(i => i.Id == arg);
+                    if (issue == null)
+                    {
+                        Console.Error.WriteLine($"Error: Issue with ID '{arg}' not found.");
+                        Environment.Exit(1);
+                    }
+                    identifier = arg;
                 }
 
                 issue.State = IssueState.Done;
 
-                var content = string.Join("", issues.Select(IssueToContent));
+                var content = string.Join("", allIssues.Select(IssueToContent));
                 File.WriteAllText(filePath, content.TrimStart());
-                Console.WriteLine($"Marked issue {issueId} as DONE");
+                Console.WriteLine($"Marked issue {identifier} as DONE");
             }
             catch (FileNotFoundException)
             {
@@ -357,53 +574,7 @@ public static class Program
         }
     }
 
-    private static void ShowHelp()
-    {
-        var helpText = @"
-Orgi - Command-line tool for managing issues in Org mode files
 
-USAGE:
-    orgi [COMMAND] [OPTIONS]
-
- COMMANDS:
-     init                    Initialize a new orgi repository
-     list [all|open] [file]  List issues
-     add [file] [OPTIONS]    Add a new issue
-     gather [OPTIONS]        Gather TODOs from source code files
-     sync [OPTIONS]          Sync orgi issues with source code
-     done <issue_id>         Mark an issue as DONE
-     --help, -h              Show this help message
-     --version, -v           Show version information
-
-LIST COMMAND:
-    orgi list               List open issues from .orgi/orgi.orgi
-    orgi list all           List all issues from .orgi/orgi.orgi
-    orgi list <file>        List open issues from specified file
-    orgi list all <file>    List all issues from specified file
-
-ADD COMMAND:
-    orgi add               Add new issue interactively
-    orgi add <file>        Add new issue to specified file
-
-GATHER COMMAND:
-    orgi gather                         Gather TODOs from current directory
-    orgi gather --dry-run              Show what would be gathered without making changes
-
- SYNC COMMAND:
-     orgi sync                          Sync completed issues back to source files
-     orgi sync --auto-confirm           Remove all completed TODOs without confirmation
-
- DONE COMMAND:
-     orgi done <issue_id>               Mark an issue as DONE
-";
-        Console.WriteLine(helpText.Trim());
-    }
-
-    private static void ShowVersion()
-    {
-        Console.WriteLine("Orgi version 0.1.2");
-        Console.WriteLine("A command-line tool for managing issues in Org mode files");
-    }
 }
 
 /// <summary>
@@ -417,7 +588,7 @@ public static class GatherCommand
         {
             var dryRun = args.Contains("--dry-run");
             var sourceDir = Directory.GetCurrentDirectory();
-            var orgFile = ".orgi/orgi.orgi";
+            var orgFile = ".orgi/orgi.org";
 
             // Ensure orgi repository is initialized
             if (!File.Exists(orgFile))
@@ -462,7 +633,7 @@ public static class SyncCommand
         try
         {
             var autoConfirm = args.Contains("--auto-confirm");
-            var orgFile = ".orgi/orgi.orgi";
+            var orgFile = ".orgi/orgi.org";
 
             // Ensure orgi repository is initialized
             if (!File.Exists(orgFile))

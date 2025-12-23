@@ -16,9 +16,12 @@ public class ProgramTests
 
         // Assert
         Assert.Contains("Found 2 open issues:", output);
-        Assert.Contains("bug-001: Parser crash on empty file", output);
+        Assert.Contains("1. bug-001: Parser crash on empty file", output);
+        Assert.Contains("2. feat-002: Support priority cookies in headlines", output);
         Assert.Contains("(Todo)", output);
+        Assert.Contains("(InProgress)", output);
         Assert.Contains("[A]", output);
+        Assert.Contains("[B]", output);
     }
 
     [Fact]
@@ -32,10 +35,15 @@ public class ProgramTests
 
         // Assert
         Assert.Contains("Found 3 issues:", output);
-        Assert.Contains("bug-001: Parser crash on empty file", output);
+        Assert.Contains("1. bug-001: Parser crash on empty file", output);
+        Assert.Contains("2. feat-002: Support priority cookies in headlines", output);
+        Assert.Contains("3. doc-003: Complete user documentation", output);
         Assert.Contains("(Todo)", output);
+        Assert.Contains("(InProgress)", output);
         Assert.Contains("(Done)", output);
         Assert.Contains("[A]", output);
+        Assert.Contains("[B]", output);
+        Assert.Contains("[C]", output);
     }
 
     [Fact]
@@ -129,5 +137,52 @@ public class ProgramTests
 
         // Cleanup
         File.Delete(tempFile);
+    }
+
+
+    [Fact]
+    public void DoneCommand_Index_SkipsDoneIssues()
+    {
+        // Arrange
+        var tempFile = Path.GetTempFileName();
+        File.WriteAllText(tempFile, @"
+* DONE [#A] Already done issue
+  :PROPERTIES:
+  :ID: task-done
+  :CREATED: <2025-01-01 Mon 12:00>
+  :END:
+
+* TODO [#A] First open issue
+  :PROPERTIES:
+  :ID: task-1
+  :CREATED: <2025-01-01 Mon 12:00>
+  :END:
+
+* TODO [#B] Second open issue
+  :PROPERTIES:
+  :ID: task-2
+  :CREATED: <2025-01-01 Mon 12:00>
+  :END:
+");
+
+        var orgiDir = Path.Combine(Directory.GetCurrentDirectory(), ".orgi");
+        Directory.CreateDirectory(orgiDir);
+        var orgiFile = Path.Combine(orgiDir, "orgi.org");
+        File.Copy(tempFile, orgiFile, true);
+
+        // Act
+        var args = new[] { "1" }; // Mark first open issue (index 1) as done
+        Program.DoneCommand.Execute(args);
+
+        // Assert
+        var content = File.ReadAllText(orgiFile);
+        Assert.Contains("* DONE [#A] Already done issue", content);
+        Assert.Contains("* DONE [#A] First open issue", content);
+        Assert.Contains("* TODO [#B] Second open issue", content);
+
+        // Cleanup
+        File.Delete(tempFile);
+        File.Delete(orgiFile);
+        Directory.Delete(orgiDir, true);
     }
 }
