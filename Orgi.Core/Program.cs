@@ -78,10 +78,10 @@ public static class Program
 
         // Add command
         var addCommand = new Command("add", "Add a new issue");
-        var titleOption = new Option<string?>("--title", "Title of the issue");
+        var titleArgument = new Argument<string[]>("title", "Title of the issue");
         var bodyOption = new Option<string?>("--body", "Body text for the issue");
         bodyOption.AddAlias("-b");
-        addCommand.AddOption(titleOption);
+        addCommand.AddArgument(titleArgument);
         addCommand.AddOption(bodyOption);
         addCommand.SetHandler((title, body, file) =>
         {
@@ -97,24 +97,15 @@ public static class Program
                     addArgs.Add("-b");
                     addArgs.Add(body);
                 }
-                // If title provided, we need to modify AddIssue to accept it
-                if (title != null)
-                {
-                    // For now, assume interactive, but to make non-interactive, need to update AddIssue
-                    Console.Error.WriteLine("Non-interactive add with --title not implemented yet. Use interactive mode.");
-                    Environment.Exit(1);
-                }
-                else
-                {
-                    AddIssue(addArgs.ToArray());
-                }
+                string joinedTitle = title != null && title.Length > 0 ? string.Join(" ", title) : null;
+                AddIssue(joinedTitle, addArgs.ToArray());
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error: {ex.Message}");
                 Environment.Exit(1);
             }
-        }, titleOption, bodyOption, fileOption);
+        }, titleArgument, bodyOption, fileOption);
         rootCommand.AddCommand(addCommand);
 
         // Gather command
@@ -197,9 +188,9 @@ _orgi() {
                 list)
                     COMPREPLY=( $(compgen -W '--all --open' -- ""$cur"") )
                     ;;
-                add)
-                    COMPREPLY=( $(compgen -W '--title --body' -- ""$cur"") )
-                    ;;
+                 add)
+                     COMPREPLY=( $(compgen -W '--body' -- ""$cur"") )
+                     ;;
                 gather)
                     COMPREPLY=( $(compgen -W '--dry-run' -- ""$cur"") )
                     ;;
@@ -266,11 +257,11 @@ _orgi() {
                         '--open[list open issues]' \
                         '1:: :_files -g ""*.org""'
                     ;;
-                add)
-                    _arguments \
-                        '--title[title of the issue]:title:' \
-                        '(--body -b)'{--body,-b}'[body text]:body:' \
-                        '1:: :_files -g ""*.org""'
+                 add)
+                     _arguments \
+                         '1:title of the issue:title:' \
+                         '(--body -b)'{--body,-b}'[body text]:body:' \
+                         '2:: :_files -g ""*.org""'
                     ;;
                 gather)
                     _arguments \
@@ -340,7 +331,7 @@ _orgi() {
         }
     }
 
-    public static void AddIssue(string[] args)
+    public static void AddIssue(string? title, string[] args)
     {
         try
         {
@@ -357,16 +348,23 @@ _orgi() {
                 else if (!args[i].StartsWith("-"))
                 {
                     filePath = args[i];
-    }
-}
+                }
+            }
 
-
-            Console.Write("Title: ");
-            var title = Console.ReadLine()?.Trim();
-            if (string.IsNullOrEmpty(title))
+            string effectiveTitle;
+            if (!string.IsNullOrEmpty(title))
             {
-                Console.WriteLine("Title is required.");
-                return;
+                effectiveTitle = title;
+            }
+            else
+            {
+                Console.Write("Title: ");
+                effectiveTitle = Console.ReadLine()?.Trim();
+                if (string.IsNullOrEmpty(effectiveTitle))
+                {
+                    Console.WriteLine("Title is required.");
+                    return;
+                }
             }
 
             Console.Write("Priority (A/B/C/None): ");
@@ -395,10 +393,17 @@ _orgi() {
 
             if (body == null)
             {
-                body = GetBodyFromEditor();
+                if (!string.IsNullOrEmpty(title))
+                {
+                    body = "";
+                }
+                else
+                {
+                    body = GetBodyFromEditor();
+                }
             }
 
-            AddIssueToFile(filePath, title, priority, state, tags, body ?? "");
+            AddIssueToFile(filePath, effectiveTitle, priority, state, tags, body ?? "");
         }
         catch (Exception ex)
         {
