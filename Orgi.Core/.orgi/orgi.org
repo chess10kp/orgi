@@ -1,0 +1,9 @@
+
+* TODO readline integration
+  :PROPERTIES:
+  :ID: task-20251224173458
+  :TITLE: readline integration
+  :CREATED: <2025-12-24 Wed 17:34>
+  :END:
+
+  

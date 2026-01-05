@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-curl -LO https://github.com/chess10kp/orgi/releases/download/v0.1.5/orgi-linux-x64.tar.gz
+curl -LO https://github.com/chess10kp/orgi/releases/download/v0.1.8/orgi-linux-x64.tar.gz
 
 tar -xzf orgi-linux-x64.tar.gz
 

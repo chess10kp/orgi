@@ -367,29 +367,43 @@ _orgi() {
                 }
             }
 
-            Console.Write("Priority (A/B/C/None): ");
-            var priorityInput = Console.ReadLine()?.Trim().ToUpper();
-            var priority = priorityInput switch
-            {
-                "A" => "A",
-                "B" => "B",
-                "C" => "C",
-                _ => ""
-            };
+            string priority, state, tags;
 
-            Console.Write("State (TODO/INPROGRESS/DONE/KILL): ");
-            var stateInput = Console.ReadLine()?.Trim().ToUpper();
-            var state = stateInput switch
+            // Only prompt for additional information if title was not provided as argument
+            if (!string.IsNullOrEmpty(title))
             {
-                "INPROGRESS" => "INPROGRESS",
-                "DONE" => "DONE",
-                "KILL" => "KILL",
-                _ => "TODO"
-            };
+                // Use default values when title is provided as argument
+                priority = "";  // No priority by default
+                state = "TODO"; // Default state is TODO
+                tags = "";      // No tags by default
+            }
+            else
+            {
+                // Interactive mode - prompt for all values
+                Console.Write("Priority (A/B/C/None): ");
+                var priorityInput = Console.ReadLine()?.Trim().ToUpper();
+                priority = priorityInput switch
+                {
+                    "A" => "A",
+                    "B" => "B",
+                    "C" => "C",
+                    _ => ""
+                };
 
-            Console.Write("Tags (comma-separated): ");
-            var tagsInput = Console.ReadLine()?.Trim();
-            var tags = string.IsNullOrEmpty(tagsInput) ? "" : " :" + string.Join(":", tagsInput.Split(',').Select(t => t.Trim())) + ":";
+                Console.Write("State (TODO/INPROGRESS/DONE/KILL): ");
+                var stateInput = Console.ReadLine()?.Trim().ToUpper();
+                state = stateInput switch
+                {
+                    "INPROGRESS" => "INPROGRESS",
+                    "DONE" => "DONE",
+                    "KILL" => "KILL",
+                    _ => "TODO"
+                };
+
+                Console.Write("Tags (comma-separated): ");
+                var tagsInput = Console.ReadLine()?.Trim();
+                tags = string.IsNullOrEmpty(tagsInput) ? "" : " :" + string.Join(":", tagsInput.Split(',').Select(t => t.Trim())) + ":";
+            }
 
             if (body == null)
             {

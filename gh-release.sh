@@ -1,4 +1,4 @@
-gh release create v0.1.5 \
-  orgi-linux-x64.tar.gz \
-  --title "v0.1.5" \
-  --notes "Added bash and zsh completion support, refactored to System.CommandLine for improved CLI experience"
+gh release create v0.1.8 \
+   orgi-linux-x64.tar.gz \
+   --title "v0.1.8" \
+   --notes "Improved add command to not prompt for priority, state, and tags when title provided as argument"
