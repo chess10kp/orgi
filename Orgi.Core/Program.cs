@@ -291,7 +291,73 @@ _orgi() {
         }, shellArgument);
         rootCommand.AddCommand(completionCommand);
 
+        // PR commands
+        var prCommand = new Command("pr", "Pull request management");
+        rootCommand.AddCommand(prCommand);
 
+        // pr create command
+        var prCreateCommand = new Command("create", "Create a new pull request");
+        var titleOption = new Option<string>("--title", "Title of the pull request") { IsRequired = true };
+        var descriptionOption = new Option<string>("--description", "Description of the pull request");
+        descriptionOption.AddAlias("-d");
+        var sourceBranchOption = new Option<string>("--source-branch", "Source branch for the PR") { IsRequired = true };
+        sourceBranchOption.AddAlias("-s");
+        var targetBranchOption = new Option<string>("--target-branch", "Target branch for the PR (default: main)");
+        targetBranchOption.AddAlias("-t");
+        prCreateCommand.AddOption(titleOption);
+        prCreateCommand.AddOption(descriptionOption);
+        prCreateCommand.AddOption(sourceBranchOption);
+        prCreateCommand.AddOption(targetBranchOption);
+        prCreateCommand.SetHandler((title, description, sourceBranch, targetBranch) =>
+        {
+            PRCreateCommand.Execute(title, description, sourceBranch, targetBranch);
+        }, titleOption, descriptionOption, sourceBranchOption, targetBranchOption);
+        prCommand.AddCommand(prCreateCommand);
+
+        // pr list command
+        var prListCommand = new Command("list", "List all pull requests");
+        prListCommand.SetHandler(() =>
+        {
+            PRListCommand.Execute();
+        });
+        prCommand.AddCommand(prListCommand);
+
+        // pr approve command
+        var prApproveCommand = new Command("approve", "Approve a pull request");
+        var prIdOption = new Option<string>("--id", "Pull request ID") { IsRequired = true };
+        var reviewerOption = new Option<string>("--reviewer", "Reviewer name");
+        var approveCommentOption = new Option<string>("--comment", "Approval comment");
+        prApproveCommand.AddOption(prIdOption);
+        prApproveCommand.AddOption(reviewerOption);
+        prApproveCommand.AddOption(approveCommentOption);
+        prApproveCommand.SetHandler((prId, reviewer, comment) =>
+        {
+            PRApproveCommand.Execute(prId, reviewer, comment);
+        }, prIdOption, reviewerOption, approveCommentOption);
+        prCommand.AddCommand(prApproveCommand);
+
+        // pr deny command
+        var prDenyCommand = new Command("deny", "Deny a pull request");
+        var denyCommentOption = new Option<string>("--comment", "Denial comment");
+        prDenyCommand.AddOption(prIdOption);
+        prDenyCommand.AddOption(reviewerOption);
+        prDenyCommand.AddOption(denyCommentOption);
+        prDenyCommand.SetHandler((prId, reviewer, comment) =>
+        {
+            PRDenyCommand.Execute(prId, reviewer, comment);
+        }, prIdOption, reviewerOption, denyCommentOption);
+        prCommand.AddCommand(prDenyCommand);
+
+        // pr merge command
+        var prMergeCommand = new Command("merge", "Merge a pull request");
+        var mergerOption = new Option<string>("--merger", "Merger name");
+        prMergeCommand.AddOption(prIdOption);
+        prMergeCommand.AddOption(mergerOption);
+        prMergeCommand.SetHandler((prId, merger) =>
+        {
+            PRMergeCommand.Execute(prId, merger);
+        }, prIdOption, mergerOption);
+        prCommand.AddCommand(prMergeCommand);
 
         return await rootCommand.InvokeAsync(args);
     }
@@ -589,9 +655,9 @@ _orgi() {
             {
                 Console.Error.WriteLine($"Error during done: {ex.Message}");
                 Environment.Exit(1);
-            }
         }
     }
+}
 
 
 }
@@ -692,3 +758,172 @@ public static class SyncCommand
         }
     }
 }
+
+/// <summary>
+/// Handles the pr create command
+/// </summary>
+public static class PRCreateCommand
+{
+    public static void Execute(string title, string? description, string sourceBranch, string? targetBranch)
+    {
+        try
+        {
+            var prManager = new PRManager();
+            var effectiveTarget = targetBranch ?? "main";
+            var pr = prManager.CreatePR(title, description ?? "", sourceBranch, effectiveTarget);
+
+            Console.WriteLine($"Created PR {pr.Id}");
+            Console.WriteLine($"  Title: {pr.Title}");
+            Console.WriteLine($"  Source: {pr.SourceBranch} -> Target: {pr.TargetBranch}");
+            Console.WriteLine($"  Author: {pr.Author}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error creating PR: {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+}
+
+/// <summary>
+/// Handles the pr list command
+/// </summary>
+public static class PRListCommand
+{
+    public static void Execute()
+    {
+        try
+        {
+            var prManager = new PRManager();
+            var prs = prManager.ListPRs();
+
+            if (prs.Count == 0)
+            {
+                Console.WriteLine("No pull requests found.");
+                return;
+            }
+
+            Console.WriteLine($"Found {prs.Count} pull request(s):\n");
+            foreach (var pr in prs)
+            {
+                var status = pr.State.ToString().ToUpper();
+                var approvalStatus = pr.IsApproved ? "[✓ Approved]" : pr.IsDenied ? "[✗ Denied]" : "[Pending]";
+
+                Console.WriteLine($"{pr.Id}: {pr.Title} {status} {approvalStatus}");
+                Console.WriteLine($"  Author: {pr.Author}");
+                Console.WriteLine($"  Branch: {pr.SourceBranch} -> {pr.TargetBranch}");
+                if (pr.Reviews.Any())
+                {
+                    Console.WriteLine($"  Reviews: {pr.Reviews.Count} ({pr.Reviews.Count(r => r.Approved)} approved, {pr.Reviews.Count(r => !r.Approved)} denied)");
+                }
+                Console.WriteLine();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error listing PRs: {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+}
+
+/// <summary>
+/// Handles the pr approve command
+/// </summary>
+public static class PRApproveCommand
+{
+    public static void Execute(string prId, string? reviewer, string? comment)
+    {
+        try
+        {
+            var prManager = new PRManager();
+            var effectiveReviewer = reviewer ?? Environment.UserName;
+
+            prManager.ApprovePR(prId, effectiveReviewer, comment);
+
+            Console.WriteLine($"PR {prId} has been approved by {effectiveReviewer}");
+            if (!string.IsNullOrEmpty(comment))
+            {
+                Console.WriteLine($"  Comment: {comment}");
+            }
+        }
+        catch (FileNotFoundException ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.Exit(1);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error approving PR: {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+}
+
+/// <summary>
+/// Handles the pr deny command
+/// </summary>
+public static class PRDenyCommand
+{
+    public static void Execute(string prId, string? reviewer, string? comment)
+    {
+        try
+        {
+            var prManager = new PRManager();
+            var effectiveReviewer = reviewer ?? Environment.UserName;
+
+            prManager.DenyPR(prId, effectiveReviewer, comment);
+
+            Console.WriteLine($"PR {prId} has been denied by {effectiveReviewer}");
+            if (!string.IsNullOrEmpty(comment))
+            {
+                Console.WriteLine($"  Comment: {comment}");
+            }
+        }
+        catch (FileNotFoundException ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.Exit(1);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error denying PR: {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+}
+
+/// <summary>
+/// Handles the pr merge command
+/// </summary>
+public static class PRMergeCommand
+{
+    public static void Execute(string prId, string? merger)
+    {
+        try
+        {
+            var prManager = new PRManager();
+            var effectiveMerger = merger ?? Environment.UserName;
+
+            prManager.MergePR(prId, effectiveMerger);
+
+            Console.WriteLine($"PR {prId} has been merged by {effectiveMerger}");
+        }
+        catch (FileNotFoundException ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.Exit(1);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.Message}");
+            Environment.Exit(1);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error merging PR: {ex.Message}");
+            Environment.Exit(1);
+        }
+    }
+}
+
