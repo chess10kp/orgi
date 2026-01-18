@@ -172,7 +172,7 @@ public class ProgramTests
 
         // Act
         var args = new[] { "1" }; // Mark first open issue (index 1) as done
-        Program.DoneCommand.Execute(args);
+        DoneCommand.Execute(args);
 
         // Assert
         var content = File.ReadAllText(orgiFile);
