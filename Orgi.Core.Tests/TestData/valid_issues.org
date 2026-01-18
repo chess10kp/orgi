@@ -1,0 +1,43 @@
+* TODO [#A] Fix critical bug in parser :urgent:bug:
+  :PROPERTIES:
+  :ID: bug-001
+  :TITLE: Parser crash on empty file
+  :DESCRIPTION: Parser crashes when input file is empty
+  :CREATED_AT: <2025-09-12 Fri 14:30>
+  :TYPE: bug
+  :SEVERITY: critical
+  :END:
+
+  Steps to reproduce:
+  - Create empty ISSUES.org
+  - Run orgi list
+  - Observe crash
+
+* INPROGRESS [#B] Add priority support :feature:enhancement:
+  :PROPERTIES:
+  :ID: feat-002
+  :TITLE: Support priority cookies in headlines
+  :DESCRIPTION: Implementation of priority parsing
+  :CREATED_AT: <2025-09-11 Thu 09:15>
+  :TYPE: feature
+  :ESTIMATE: 4h
+  :END:
+
+  Implementation tasks:
+  1. Parse priority cookies [#A], [#B], [#C]
+  2. Update Issue model to include priority
+  3. Add priority filtering to list command
+  4. Update documentation
+
+* DONE [#C] Write documentation :docs:
+  :PROPERTIES:
+  :ID: doc-003
+  :TITLE: Complete user documentation
+  :DESCRIPTION: Write comprehensive user guide
+  :CREATED_AT: <2025-09-10 Wed>
+  :END:
+
+  Documentation includes:
+  + Installation guide
+  + Usage examples
+  + Configuration options

@@ -1,0 +1,181 @@
+* Orgi
+Org Issue
+
+A local first solution for project issues that doesn't need github
+
+** Installation
+
+*** Prerequisites
+
+- .NET 10.0 SDK
+
+*** From Source
+
+1. Clone the repository:
+   #+begin_src bash
+   git clone https://github.com/your-repo/orgi.git
+   cd orgi
+   #+end_src
+
+2. Build the project:
+   #+begin_src bash
+   dotnet build Orgi.Core/Orgi.Core.csproj
+   #+end_src
+
+3. Run the executable:
+   #+begin_src bash
+   dotnet run --project Orgi.Core
+   #+end_src
+
+4. Build orgi
+   #+begin_src bash
+   dotnet publish -c Release -r linux-x64 --self-contained false -o ./publish Orgi.Core/Orgi.Core.csproj
+   #+end_src
+
+*** Using Docker
+
+1. Build the Docker image:
+   #+begin_src bash
+   docker build -t orgi Orgi.Core/
+   #+end_src
+
+2. Run the container:
+   #+begin_src bash
+   docker run -it orgi
+   #+end_src
+
+** Usage
+
+*** Initialize a new Orgi repository
+
+#+begin_src bash
+orgi init
+#+end_src
+
+*** List issues
+
+#+begin_src bash
+orgi list [--all|--open] [file]
+#+end_src
+
+- ~--all~: List all issues (default: open only)
+- ~--open~: List only open issues (TODO and INPROGRESS)
+- ~file~: Path to .orgi file (default: ~.orgi/orgi.org~)
+
+*** Add a new issue
+
+#+begin_src bash
+orgi add [--title title] [--body body]
+#+end_src
+
+- ~--title~: Title of the issue (prompted if not provided)
+- ~--body, -b~: Body text for the issue
+
+Prompts for title, priority (A/B/C), state (TODO/INPROGRESS/DONE/KILL), tags, and body if not provided via options.
+
+*** Gather TODOs from source code
+
+#+begin_src bash
+orgi gather [--dry-run]
+#+end_src
+
+- ~--dry-run~: Show what would be gathered without making changes
+
+Gathers TODOs from source code files in the current directory and adds them as issues to ~.orgi/orgi.org~.
+
+*** Sync issues back to source
+
+#+begin_src bash
+orgi sync [--auto-confirm]
+#+end_src
+
+- ~--auto-confirm~: Remove all completed TODOs without confirmation
+
+Syncs completed issues back to source files, removing the corresponding TODOs.
+
+*** Mark an issue as done
+
+#+begin_src bash
+orgi done <id>
+#+end_src
+
+Marks the issue as DONE. Specify either the index from the list output or the issue ID.
+
+*** Pull Request Management
+
+Orgi provides local-first pull request management without requiring a remote hosting service.
+
+**** Create a pull request
+
+#+begin_src bash
+orgi pr create --title <title> --source-branch <branch> [--description <desc>] [--target-branch <branch>]
+#+end_src
+
+Creates a new pull request with the specified title, branches, and optional description.
+
+**** List pull requests
+
+#+begin_src bash
+orgi pr list
+#+end_src
+
+Lists all pull requests with their current status, approval status, author, and branch information.
+
+**** Approve a pull request
+
+#+begin_src bash
+orgi pr approve --id <pr-id> [--reviewer <name>] [--comment <text>]
+#+end_src
+
+- ~--id~: Pull request ID (required)
+- ~--reviewer~: Name of the reviewer (default: current git user)
+- ~--comment~: Optional approval comment
+
+Approves the pull request, allowing it to be merged.
+
+**** Deny a pull request
+
+#+begin_src bash
+orgi pr deny --id <pr-id> [--reviewer <name>] [--comment <text>]
+#+end_src
+
+- ~--id~: Pull request ID (required)
+- ~--reviewer~: Name of the reviewer (default: current git user)
+- ~--comment~: Optional denial comment
+
+Denies the pull request, preventing it from being merged.
+
+**** Merge a pull request
+
+#+begin_src bash
+orgi pr merge --id <pr-id> [--merger <name>]
+#+end_src
+
+- ~--merger~: Name of the person merging (default: current git user)
+
+Merges an approved pull request. The PR must have at least one approval and no denials to be mergeable.
+
+*** Shell completion
+
+#+begin_src bash
+orgi completion bash > ~/.bash_completion.d/orgi
+orgi completion zsh > ~/.zsh/completions/_orgi
+#+end_src
+
+** Issue Format
+
+Issues are stored in Org mode format:
+
+#+begin_src org
+* TODO [#A] Issue title :tag1:tag2:
+  :PROPERTIES:
+  :ID: task-20231218120000
+  :TITLE: Issue title
+  :CREATED: <2023-12-18 Mon 12:00>
+  :END:
+
+  Issue body
+#+end_src
+
+States: TODO, INPROGRESS, DONE, KILL
+Priorities: A (high), B (medium), C (low)

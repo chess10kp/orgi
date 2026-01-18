@@ -1,0 +1,23 @@
+* INVALID Invalid issue state
+  :PROPERTIES:
+  :ID: test-002
+  :TITLE: Invalid state
+  :DESCRIPTION: This has invalid state
+  :CREATED_AT: <2025-09-12 Fri>
+  :END:
+
+* TODO [#X] Invalid priority
+  :PROPERTIES:
+  :ID: test-003
+  :TITLE: Invalid priority
+  :DESCRIPTION: This has invalid priority
+  :CREATED_AT: <2025-09-12 Fri>
+  :END:
+
+* TODO Malformed properties
+  :PROPERTIES
+  :ID: test-004
+  :TITLE: Malformed properties drawer
+  :DESCRIPTION: Properties drawer is malformed
+  :CREATED_AT: <2025-09-12 Fri>
+  :END:
