@@ -3,3 +3,12 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+
+.opencode/
+.orgi/
+AGENTS.md
+Orgi.Core/orgi-linux-x64.tar.gz
+Orgi.Core/orgi-linux-x64.tar.gz.1
+orgi-linux-x64.tar.gz
+orgi-linux-x64/
+publish-nativaot/

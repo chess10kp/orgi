@@ -5,8 +5,195 @@ using System.IO;
 using Orgi.Core.Model;
 using Orgi.Core.Sync;
 using Orgi.Core.Discovery;
+using Orgi.Core.TUI;
 
 namespace Orgi.Core;
+
+public static class OrgiWorktree
+{
+    private const string OrgiDir = ".orgi";
+    private const string OrgiDataBranch = "orgi-data";
+
+    public static void CommitChanges(string message = "Update orgi data")
+    {
+        RunGitCommand($"-C {OrgiDir} add .", throwOnError: true);
+        RunGitCommand($"-C {OrgiDir} commit -m \"{message}\"", throwOnError: true);
+        RunGitCommand($"push origin {OrgiDataBranch}");
+    }
+
+    private static (bool Success, string Output) RunGitCommand(string args, bool throwOnError = false)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "git",
+            Arguments = args,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(startInfo);
+        if (process == null)
+        {
+            if (throwOnError)
+                throw new InvalidOperationException($"Failed to start git command: {args}");
+            return (false, "");
+        }
+
+        var output = process.StandardOutput.ReadToEnd();
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+
+        var success = process.ExitCode == 0;
+        var result = success ? output : error;
+
+        if (!success && throwOnError)
+        {
+            throw new InvalidOperationException($"Git command failed: git {args}\n{result}");
+        }
+
+        return (success, result);
+    }
+}
+
+public static class OrgiInitializer
+{
+    private const string OrgiBranch = "orgi-data";
+    private const string OrgiDir = ".orgi";
+
+    public static void Initialize()
+    {
+        if (!IsGitRepository())
+        {
+            throw new InvalidOperationException("Not a git repository");
+        }
+
+        if (WorktreeExists())
+        {
+            Console.WriteLine("Orgi repository already initialized at .orgi/");
+            return;
+        }
+
+        if (BranchExists())
+        {
+            Console.WriteLine($"Found existing {OrgiBranch} branch, using it...");
+        }
+        else
+        {
+            Console.WriteLine($"Creating new {OrgiBranch} branch...");
+            CreateOrphanBranch();
+        }
+
+        RemoveExistingOrgiDir();
+        CreateWorktree();
+
+        if (!BranchExists())
+        {
+            InitializeFiles();
+        }
+
+        Console.WriteLine($"Initialized orgi at .orgi/ on branch {OrgiBranch}");
+    }
+
+    private static bool IsGitRepository()
+    {
+        var result = RunGitCommand("rev-parse --git-dir");
+        return result.Success;
+    }
+
+    private static bool WorktreeExists()
+    {
+        var result = RunGitCommand("worktree list");
+        return result.Success && result.Output.Contains(OrgiDir);
+    }
+
+    private static bool BranchExists()
+    {
+        var result = RunGitCommand($"branch --list {OrgiBranch}");
+        return result.Success && !string.IsNullOrWhiteSpace(result.Output);
+    }
+
+    private static void RemoveExistingOrgiDir()
+    {
+        if (Directory.Exists(OrgiDir))
+        {
+            Directory.Delete(OrgiDir, true);
+        }
+    }
+
+    private static void CreateOrphanBranch()
+    {
+        var originalBranch = GetCurrentBranch();
+        RunGitCommand($"checkout --orphan {OrgiBranch}", throwOnError: true);
+        RunGitCommand("rm -rf .", throwOnError: true);
+        RunGitCommand("clean -fd", throwOnError: true);
+        RunGitCommand("commit --allow-empty -m \"Initial orgi data branch\"", throwOnError: true);
+        RunGitCommand($"checkout {originalBranch}", throwOnError: true);
+    }
+
+    private static string GetCurrentBranch()
+    {
+        var result = RunGitCommand("branch --show-current");
+        return result.Success ? result.Output.Trim() : "main";
+    }
+
+    private static void CreateWorktree()
+    {
+        RunGitCommand($"worktree add {OrgiDir} {OrgiBranch}", throwOnError: true);
+    }
+
+    private static void InitializeFiles()
+    {
+        var orgiFilePath = Path.Combine(OrgiDir, "orgi.org");
+        File.WriteAllText(orgiFilePath, "");
+
+        var prsDir = Path.Combine(OrgiDir, "prs");
+        Directory.CreateDirectory(prsDir);
+
+        var logsDir = Path.Combine(OrgiDir, "logs");
+        Directory.CreateDirectory(logsDir);
+
+        RunGitCommand($"-C {OrgiDir} add .", throwOnError: true);
+        RunGitCommand($"-C {OrgiDir} commit -m \"Initialize orgi data structure\"", throwOnError: true);
+        RunGitCommand($"push origin {OrgiBranch}");
+    }
+
+    private static (bool Success, string Output) RunGitCommand(string args, bool throwOnError = false)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "git",
+            Arguments = args,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(startInfo);
+        if (process == null)
+        {
+            if (throwOnError)
+                throw new InvalidOperationException($"Failed to start git command: {args}");
+            return (false, "");
+        }
+
+        var output = process.StandardOutput.ReadToEnd();
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+
+        var success = process.ExitCode == 0;
+        var result = success ? output : error;
+
+        if (!success && throwOnError)
+        {
+            throw new InvalidOperationException($"Git command failed: git {args}\n{result}");
+        }
+
+        return (success, result);
+    }
+}
 
 public static class Program
 {
@@ -47,11 +234,15 @@ public static class Program
         var initCommand = new Command("init", "Initialize a new orgi repository");
         initCommand.SetHandler(() =>
         {
-            var dirPath = ".orgi";
-            var initFilePath = Path.Combine(dirPath, "orgi.org");
-            Directory.CreateDirectory(dirPath);
-            File.WriteAllText(initFilePath, "");
-            Console.WriteLine("Initialized orgi at .orgi/orgi.org");
+            try
+            {
+                OrgiInitializer.Initialize();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error: {ex.Message}");
+                Environment.Exit(1);
+            }
         });
         rootCommand.AddCommand(initCommand);
 
@@ -359,6 +550,22 @@ _orgi() {
         }, prIdOption, mergerOption);
         prCommand.AddCommand(prMergeCommand);
 
+        // TUI command
+        var tuiCommand = new Command("tui", "Launch the Terminal User Interface");
+        tuiCommand.SetHandler(() =>
+        {
+            try
+            {
+                TUIApplication.Run();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error: {ex.Message}");
+                Environment.Exit(1);
+            }
+        });
+        rootCommand.AddCommand(tuiCommand);
+
         return await rootCommand.InvokeAsync(args);
     }
 
@@ -550,6 +757,7 @@ _orgi() {
             var content = $"\n* {state}{priorityStr} {title}{tags}\n  :PROPERTIES:\n  :ID: {id}\n  :TITLE: {title}\n  :CREATED: {created}\n  :END:\n\n  {body}\n";
 
             File.AppendAllText(filePath, content);
+            OrgiWorktree.CommitChanges($"Add issue {id}");
             Console.WriteLine($"Added issue {id}");
         }
         catch (UnauthorizedAccessException)
@@ -570,7 +778,7 @@ _orgi() {
         }
     }
 
-    private static string IssueToContent(Issue issue)
+    internal static string IssueToContent(Issue issue)
     {
         var priorityStr = issue.Priority == Priority.None ? "" : $" [#{issue.Priority}]";
         var tagsStr = issue.Tags.Any() ? " :" + string.Join(":", issue.Tags) + ":" : "";
@@ -644,6 +852,7 @@ _orgi() {
 
                 var content = string.Join("", allIssues.Select(IssueToContent));
                 File.WriteAllText(filePath, content.TrimStart());
+                OrgiWorktree.CommitChanges($"Mark issue {identifier} as DONE");
                 Console.WriteLine($"Marked issue {identifier} as DONE");
             }
             catch (FileNotFoundException)
