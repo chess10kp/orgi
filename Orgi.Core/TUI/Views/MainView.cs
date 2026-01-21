@@ -130,6 +130,8 @@ public class IssuesTab : BaseTab
     private List<string> _issueDisplayList = new();
     private List<Issue> _issues = new();
     private StatusBar? _tabStatusBar;
+    private Label? _headerLabel;
+    private Label? _separatorLabel;
 
     private Action? _showFilterAction;
     private bool _terminalTooSmall = false;
@@ -169,6 +171,7 @@ public class IssuesTab : BaseTab
         LoadIssues();
         _showFilterAction = ShowFilterDialog;
         CreateUI();
+        UpdateHeaderLabels();
     }
 
     private void LoadIssues()
@@ -252,6 +255,10 @@ public class IssuesTab : BaseTab
         ).ToList();
     }
 
+    private string? _headerText;
+    private string? _separatorText;
+    private string? _errorText;
+
     private void UpdateDisplayList()
     {
         _issueDisplayList.Clear();
@@ -261,14 +268,15 @@ public class IssuesTab : BaseTab
 
         if (_terminalTooSmall)
         {
-            _issueDisplayList.Add("Terminal too small. Please resize to at least 90 columns.");
+            _errorText = "Terminal too small. Please resize to at least 90 columns.";
+            _headerText = null;
+            _separatorText = null;
             return;
         }
 
-        var header = $"│ STATE{RepeatString(" ", stateWidth - 4)}│ ID{RepeatString(" ", idWidth - 1)}│ PRIO{RepeatString(" ", prioWidth - 3)}│ TITLE{RepeatString(" ", titleWidth - 4)}│ TAGS{RepeatString(" ", tagsWidth - 4)}│";
-        var separator = $"├{RepeatChar('─', stateWidth + 2)}┼{RepeatChar('─', idWidth + 2)}┼{RepeatChar('─', prioWidth + 2)}┼{RepeatChar('─', titleWidth + 2)}┼{RepeatChar('─', tagsWidth + 2)}┤";
-        _issueDisplayList.Add(header);
-        _issueDisplayList.Add(separator);
+        _errorText = null;
+        _headerText = $"│ STATE{RepeatString(" ", stateWidth - 4)}│ ID{RepeatString(" ", idWidth - 1)}│ PRIO{RepeatString(" ", prioWidth - 3)}│ TITLE{RepeatString(" ", titleWidth - 4)}│ TAGS{RepeatString(" ", tagsWidth - 4)}│";
+        _separatorText = $"├{RepeatChar('─', stateWidth + 2)}┼{RepeatChar('─', idWidth + 2)}┼{RepeatChar('─', prioWidth + 2)}┼{RepeatChar('─', titleWidth + 2)}┼{RepeatChar('─', tagsWidth + 2)}┤";
 
         foreach (var issue in issuesToShow)
         {
@@ -296,12 +304,28 @@ public class IssuesTab : BaseTab
 
     private void CreateUI()
     {
-        _issueListView = new IssueListView(_issueDisplayList, _issues, ApplyFilter, _showFilterAction ?? (() => ShowFilterDialog()))
+        _headerLabel = new Label("")
         {
             X = 0,
             Y = 0,
             Width = Dim.Fill(),
-            Height = Dim.Fill() - 1
+            Height = 1
+        };
+
+        _separatorLabel = new Label("")
+        {
+            X = 0,
+            Y = 1,
+            Width = Dim.Fill(),
+            Height = 1
+        };
+
+        _issueListView = new IssueListView(_issueDisplayList, _issues, ApplyFilter, _showFilterAction ?? (() => ShowFilterDialog()))
+        {
+            X = 0,
+            Y = 2,
+            Width = Dim.Fill(),
+            Height = Dim.Fill() - 3
         };
 
         _issueListView.OpenSelectedItem += (args) =>
@@ -329,6 +353,8 @@ public class IssuesTab : BaseTab
             Height = 1
         };
 
+        Add(_headerLabel);
+        Add(_separatorLabel);
         Add(_issueListView);
         Add(_tabStatusBar);
     }
@@ -350,6 +376,7 @@ public class IssuesTab : BaseTab
             _currentFilter = filter;
         }
         UpdateDisplayList();
+        UpdateHeaderLabels();
         _issueListView.SetSource(_issueDisplayList);
     }
 
@@ -486,7 +513,24 @@ public class IssuesTab : BaseTab
     public override void Refresh()
     {
         LoadIssues();
+        UpdateHeaderLabels();
         _issueListView.SetSource(_issueDisplayList);
+    }
+
+    private void UpdateHeaderLabels()
+    {
+        if (_errorText != null)
+        {
+            _headerLabel!.Text = _errorText;
+            _separatorLabel!.Text = "";
+            _issueListView.Visible = false;
+        }
+        else
+        {
+            _headerLabel!.Text = _headerText ?? "";
+            _separatorLabel!.Text = _separatorText ?? "";
+            _issueListView.Visible = true;
+        }
     }
 
     public void ScrollDown()
@@ -519,6 +563,11 @@ public class PRTab : BaseTab
     private StatusBar? _tabStatusBar;
     private Action? _showFilterAction;
     private bool _terminalTooSmall = false;
+    private Label? _headerLabel;
+    private Label? _separatorLabel;
+    private string? _headerText;
+    private string? _separatorText;
+    private string? _errorText;
 
     private class PRListView : ListView
     {
@@ -555,6 +604,7 @@ public class PRTab : BaseTab
         LoadPRs();
         _showFilterAction = ShowFilterDialog;
         CreateUI();
+        UpdateHeaderLabels();
     }
 
     private void LoadPRs()
@@ -642,14 +692,15 @@ public class PRTab : BaseTab
 
         if (_terminalTooSmall)
         {
-            _prDisplayList.Add("Terminal too small. Please resize to at least 80 columns.");
+            _errorText = "Terminal too small. Please resize to at least 80 columns.";
+            _headerText = null;
+            _separatorText = null;
             return;
         }
 
-        var header = $"│ STATE{RepeatString(" ", stateWidth - 5)}│ ID{RepeatString(" ", idWidth - 2)}│ TITLE{RepeatString(" ", titleWidth - 5)}│ STATUS{RepeatString(" ", statusWidth - 6)}│";
-        var separator = $"├{RepeatChar('─', stateWidth + 2)}┼{RepeatChar('─', idWidth + 2)}┼{RepeatChar('─', titleWidth + 2)}┼{RepeatChar('─', statusWidth + 2)}┤";
-        _prDisplayList.Add(header);
-        _prDisplayList.Add(separator);
+        _errorText = null;
+        _headerText = $"│ STATE{RepeatString(" ", stateWidth - 5)}│ ID{RepeatString(" ", idWidth - 2)}│ TITLE{RepeatString(" ", titleWidth - 5)}│ STATUS{RepeatString(" ", statusWidth - 6)}│";
+        _separatorText = $"├{RepeatChar('─', stateWidth + 2)}┼{RepeatChar('─', idWidth + 2)}┼{RepeatChar('─', titleWidth + 2)}┼{RepeatChar('─', statusWidth + 2)}┤";
 
         foreach (var pr in prsToShow)
         {
@@ -675,12 +726,28 @@ public class PRTab : BaseTab
 
     private void CreateUI()
     {
-        _prListView = new PRListView(_prDisplayList, _prs, ApplyFilter, _showFilterAction ?? (() => ShowFilterDialog()))
+        _headerLabel = new Label("")
         {
             X = 0,
             Y = 0,
             Width = Dim.Fill(),
-            Height = Dim.Fill() - 1
+            Height = 1
+        };
+
+        _separatorLabel = new Label("")
+        {
+            X = 0,
+            Y = 1,
+            Width = Dim.Fill(),
+            Height = 1
+        };
+
+        _prListView = new PRListView(_prDisplayList, _prs, ApplyFilter, _showFilterAction ?? (() => ShowFilterDialog()))
+        {
+            X = 0,
+            Y = 2,
+            Width = Dim.Fill(),
+            Height = Dim.Fill() - 3
         };
 
         _prListView.OpenSelectedItem += (args) =>
@@ -704,6 +771,8 @@ public class PRTab : BaseTab
             Height = 1
         };
 
+        Add(_headerLabel);
+        Add(_separatorLabel);
         Add(_prListView);
         Add(_tabStatusBar);
     }
@@ -725,6 +794,7 @@ public class PRTab : BaseTab
             _currentFilter = filter;
         }
         UpdateDisplayList();
+        UpdateHeaderLabels();
         _prListView.SetSource(_prDisplayList);
     }
 
@@ -750,7 +820,24 @@ public class PRTab : BaseTab
     public override void Refresh()
     {
         LoadPRs();
+        UpdateHeaderLabels();
         _prListView.SetSource(_prDisplayList);
+    }
+
+    private void UpdateHeaderLabels()
+    {
+        if (_errorText != null)
+        {
+            _headerLabel!.Text = _errorText;
+            _separatorLabel!.Text = "";
+            _prListView.Visible = false;
+        }
+        else
+        {
+            _headerLabel!.Text = _headerText ?? "";
+            _separatorLabel!.Text = _separatorText ?? "";
+            _prListView.Visible = true;
+        }
     }
 
     public void ScrollDown()
