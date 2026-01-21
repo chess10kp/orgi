@@ -29,8 +29,47 @@ A local first solution for project issues that doesn't need github
 
 4. Build orgi
    #+begin_src bash
+   # Linux/macOS
    dotnet publish -c Release -r linux-x64 --self-contained false -o ./publish Orgi.Core/Orgi.Core.csproj
+   
+   # Windows
+   dotnet publish -c Release -r win-x64 --self-contained false -o ./publish Orgi.Core/Orgi.Core.csproj
    #+end_src
+
+*** Binary Installation
+
+**** Linux/macOS
+
+1. Download and extract:
+   #+begin_src bash
+   curl -LO https://github.com/chess10kp/orgi/releases/download/v0.1.9/orgi-linux-x64.tar.gz
+   tar -xzf orgi-linux-x64.tar.gz
+   #+end_src
+
+2. Install:
+   #+begin_src bash
+   cd orgi-linux-x64
+   ./install.sh
+   #+end_src
+
+**** Windows
+
+1. Download and extract:
+   #+begin_src powershell
+   Invoke-WebRequest -Uri https://github.com/chess10kp/orgi/releases/download/v0.1.9/orgi-win-x64.zip -OutFile orgi-win-x64.zip
+   Expand-Archive -Path orgi-win-x64.zip -DestinationPath .
+   #+end_src
+
+2. Install:
+   #+begin_src powershell
+   cd orgi-win-x64
+   .\install.ps1
+   #+end_src
+
+3. Or manual installation:
+   - Copy orgi.exe to a directory in your PATH (e.g., C:\Program Files\orgi\)
+   - Add the directory to your PATH environment variable
+   - Install PowerShell completion: orgi completion powershell > orgi-completion.ps1
 
 *** Using Docker
 
@@ -158,8 +197,14 @@ Merges an approved pull request. The PR must have at least one approval and no d
 *** Shell completion
 
 #+begin_src bash
+# Bash
 orgi completion bash > ~/.bash_completion.d/orgi
+
+# Zsh
 orgi completion zsh > ~/.zsh/completions/_orgi
+
+# PowerShell
+orgi completion powershell > orgi-completion.ps1
 #+end_src
 
 ** Issue Format

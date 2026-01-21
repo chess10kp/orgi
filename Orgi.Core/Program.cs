@@ -474,9 +474,118 @@ _orgi() {
 }
 ".Trim());
             }
+            else if (shell == "powershell")
+            {
+                // Output PowerShell completion script
+                Console.WriteLine(@"
+# PowerShell completion for orgi
+using namespace System.Management.Automation
+using namespace System.Management.Automation.Language
+
+Register-ArgumentCompleter -Native -CommandName orgi -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+
+    $command = $commandAst.CommandElements[0].Value
+    $subcommand = if ($commandAst.CommandElements.Count -gt 1) { $commandAst.CommandElements[1].Value } else { $null }
+
+    switch ($subcommand) {
+        'init' {
+            # No additional arguments for init
+            break
+        }
+        'list' {
+            [CompletionResult]::new('--all')
+            [CompletionResult]::new('--open')
+            break
+        }
+        'add' {
+            [CompletionResult]::new('--body')
+            [CompletionResult]::new('-b')
+            break
+        }
+        'gather' {
+            [CompletionResult]::new('--dry-run')
+            break
+        }
+        'sync' {
+            [CompletionResult]::new('--auto-confirm')
+            break
+        }
+        'done' {
+            # Free input for index or ID
+            break
+        }
+        'completion' {
+            [CompletionResult]::new('bash')
+            [CompletionResult]::new('zsh')
+            [CompletionResult]::new('powershell')
+            break
+        }
+        'pr' {
+            if ($commandAst.CommandElements.Count -gt 2) {
+                $prSubcommand = $commandAst.CommandElements[2].Value
+                switch ($prSubcommand) {
+                    'create' {
+                        [CompletionResult]::new('--title')
+                        [CompletionResult]::new('--description')
+                        [CompletionResult]::new('-d')
+                        [CompletionResult]::new('--source-branch')
+                        [CompletionResult]::new('-s')
+                        [CompletionResult]::new('--target-branch')
+                        [CompletionResult]::new('-t')
+                    }
+                    'approve' {
+                        [CompletionResult]::new('--id')
+                        [CompletionResult]::new('--reviewer')
+                        [CompletionResult]::new('--comment')
+                    }
+                    'deny' {
+                        [CompletionResult]::new('--id')
+                        [CompletionResult]::new('--reviewer')
+                        [CompletionResult]::new('--comment')
+                    }
+                    'merge' {
+                        [CompletionResult]::new('--id')
+                        [CompletionResult]::new('--merger')
+                    }
+                }
+            } else {
+                [CompletionResult]::new('create')
+                [CompletionResult]::new('list')
+                [CompletionResult]::new('approve')
+                [CompletionResult]::new('deny')
+                [CompletionResult]::new('merge')
+            }
+            break
+        }
+        default {
+            # Main commands
+            [CompletionResult]::new('init')
+            [CompletionResult]::new('list')
+            [CompletionResult]::new('add')
+            [CompletionResult]::new('gather')
+            [CompletionResult]::new('sync')
+            [CompletionResult]::new('done')
+            [CompletionResult]::new('completion')
+            [CompletionResult]::new('pr')
+            [CompletionResult]::new('tui')
+            [CompletionResult]::new('--help')
+            [CompletionResult]::new('--version')
+            
+            # File completion for .org files
+            if (-not $wordToComplete.StartsWith('-')) {
+                Get-ChildItem -Path (Get-Location) -Filter '*.org' | ForEach-Object {
+                    [CompletionResult]::new($_.Name)
+                }
+            }
+        }
+    }
+}
+".Trim());
+            }
             else
             {
-                Console.Error.WriteLine("Unsupported shell. Supported: bash, zsh");
+                Console.Error.WriteLine("Unsupported shell. Supported: bash, zsh, powershell");
                 Environment.Exit(1);
             }
         }, shellArgument);
@@ -702,7 +811,8 @@ _orgi() {
     {
         try
         {
-            var editor = Environment.GetEnvironmentVariable("EDITOR") ?? "nano";
+            var editor = Environment.GetEnvironmentVariable("EDITOR") ?? 
+                         (Environment.OSVersion.Platform == PlatformID.Win32NT ? "notepad.exe" : "nano");
             var tempFile = Path.GetTempFileName();
             try
             {
@@ -712,7 +822,7 @@ _orgi() {
                 {
                     FileName = editor,
                     Arguments = tempFile,
-                    UseShellExecute = true
+                    UseShellExecute = Environment.OSVersion.Platform == PlatformID.Win32NT
                 });
 
                 if (process == null)

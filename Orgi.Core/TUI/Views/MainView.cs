@@ -46,6 +46,20 @@ public class MainView : Window
         });
 
         Add(_statusBar);
+
+        Application.Resized += HandleResize;
+    }
+
+    private void HandleResize(Application.ResizedEventArgs args)
+    {
+        try
+        {
+            _issuesTab.Refresh();
+            _prTab.Refresh();
+        }
+        catch (Exception)
+        {
+        }
     }
 
     private void Refresh()
@@ -118,6 +132,7 @@ public class IssuesTab : BaseTab
     private StatusBar? _tabStatusBar;
 
     private Action? _showFilterAction;
+    private bool _terminalTooSmall = false;
 
     private class IssueListView : ListView
     {
@@ -176,6 +191,52 @@ public class IssuesTab : BaseTab
 
     private string? _currentFilter = null;
 
+    private const int MinTerminalWidth = 90;
+    private const int StateColumnWidth = 8;
+    private const int IdColumnWidth = 18;
+
+    private string RepeatChar(char c, int count)
+    {
+        return new string(c, count);
+    }
+
+    private string RepeatString(string s, int count)
+    {
+        var result = new System.Text.StringBuilder();
+        for (int i = 0; i < count; i++)
+        {
+            result.Append(s);
+        }
+        return result.ToString();
+    }
+
+    private string PadLeft(string s, int width)
+    {
+        return s.PadLeft(width);
+    }
+
+    private string PadRight(string s, int width)
+    {
+        return s.PadRight(width);
+    }
+
+    private (int stateWidth, int idWidth, int prioWidth, int titleWidth, int tagsWidth) CalculateColumnWidths()
+    {
+        var terminalWidth = Application.Top.Frame.Width;
+        _terminalTooSmall = terminalWidth < MinTerminalWidth;
+
+        if (_terminalTooSmall)
+        {
+            return (StateColumnWidth, IdColumnWidth, 5, 20, 8);
+        }
+
+        var fixedWidth = StateColumnWidth + IdColumnWidth + 3;
+        var remainingWidth = terminalWidth - fixedWidth - 10;
+        var equalColumnWidth = remainingWidth / 3;
+
+        return (StateColumnWidth, IdColumnWidth, equalColumnWidth, equalColumnWidth, equalColumnWidth);
+    }
+
     private List<Issue> GetFilteredIssues()
     {
         if (string.IsNullOrWhiteSpace(_currentFilter))
@@ -195,13 +256,29 @@ public class IssuesTab : BaseTab
     {
         _issueDisplayList.Clear();
         var issuesToShow = GetFilteredIssues();
+
+        var (stateWidth, idWidth, prioWidth, titleWidth, tagsWidth) = CalculateColumnWidths();
+
+        if (_terminalTooSmall)
+        {
+            _issueDisplayList.Add("Terminal too small. Please resize to at least 90 columns.");
+            return;
+        }
+
+        var header = $"│ STATE{RepeatString(" ", stateWidth - 4)}│ ID{RepeatString(" ", idWidth - 1)}│ PRIO{RepeatString(" ", prioWidth - 3)}│ TITLE{RepeatString(" ", titleWidth - 4)}│ TAGS{RepeatString(" ", tagsWidth - 4)}│";
+        var separator = $"├{RepeatChar('─', stateWidth + 2)}┼{RepeatChar('─', idWidth + 2)}┼{RepeatChar('─', prioWidth + 2)}┼{RepeatChar('─', titleWidth + 2)}┼{RepeatChar('─', tagsWidth + 2)}┤";
+        _issueDisplayList.Add(header);
+        _issueDisplayList.Add(separator);
+
         foreach (var issue in issuesToShow)
         {
             var stateIcon = GetStateIcon(issue.State);
-            var priorityStr = issue.Priority == Priority.None ? "" : $"[{issue.Priority}]";
-            var tagsStr = issue.Tags.Any() ? $" :{string.Join(":", issue.Tags)}:" : "";
+            var priorityStr = issue.Priority == Priority.None ? "" : issue.Priority.ToString();
+            var tagsStr = issue.Tags.Any() ? $":{string.Join(":", issue.Tags)}:" : "";
             var shortId = issue.Id.Replace("task-", "");
-            _issueDisplayList.Add($"{stateIcon} {shortId} {priorityStr} {issue.Title}{tagsStr}");
+            var title = issue.Title.Length > titleWidth - 3 ? issue.Title.Substring(0, titleWidth - 6) + "..." : issue.Title;
+            var tags = tagsStr.Length > tagsWidth ? tagsStr.Substring(0, tagsWidth - 3) + "..." : tagsStr;
+            _issueDisplayList.Add($"│ {PadRight(stateIcon, stateWidth)} │ {PadRight(shortId, idWidth)} │ {PadRight(priorityStr, prioWidth)} │ {PadRight(title, titleWidth)} │ {PadRight(tags, tagsWidth)} │");
         }
     }
 
@@ -441,6 +518,7 @@ public class PRTab : BaseTab
     private string? _currentFilter = null;
     private StatusBar? _tabStatusBar;
     private Action? _showFilterAction;
+    private bool _terminalTooSmall = false;
 
     private class PRListView : ListView
     {
@@ -493,6 +571,52 @@ public class PRTab : BaseTab
         }
     }
 
+    private const int PRMinTerminalWidth = 80;
+    private const int PRStateColumnWidth = 8;
+    private const int PRIdColumnWidth = 18;
+
+    private string RepeatChar(char c, int count)
+    {
+        return new string(c, count);
+    }
+
+    private string RepeatString(string s, int count)
+    {
+        var result = new System.Text.StringBuilder();
+        for (int i = 0; i < count; i++)
+        {
+            result.Append(s);
+        }
+        return result.ToString();
+    }
+
+    private string PadLeft(string s, int width)
+    {
+        return s.PadLeft(width);
+    }
+
+    private string PadRight(string s, int width)
+    {
+        return s.PadRight(width);
+    }
+
+    private (int stateWidth, int idWidth, int titleWidth, int statusWidth) CalculatePRColumnWidths()
+    {
+        var terminalWidth = Application.Top.Frame.Width;
+        _terminalTooSmall = terminalWidth < PRMinTerminalWidth;
+
+        if (_terminalTooSmall)
+        {
+            return (PRStateColumnWidth, PRIdColumnWidth, 20, 8);
+        }
+
+        var fixedWidth = PRStateColumnWidth + PRIdColumnWidth + 2;
+        var remainingWidth = terminalWidth - fixedWidth - 10;
+        var equalColumnWidth = remainingWidth / 2;
+
+        return (PRStateColumnWidth, PRIdColumnWidth, equalColumnWidth, equalColumnWidth);
+    }
+
     private List<PullRequest> GetFilteredPRs()
     {
         if (string.IsNullOrWhiteSpace(_currentFilter))
@@ -513,12 +637,27 @@ public class PRTab : BaseTab
     {
         _prDisplayList.Clear();
         var prsToShow = GetFilteredPRs();
+
+        var (stateWidth, idWidth, titleWidth, statusWidth) = CalculatePRColumnWidths();
+
+        if (_terminalTooSmall)
+        {
+            _prDisplayList.Add("Terminal too small. Please resize to at least 80 columns.");
+            return;
+        }
+
+        var header = $"│ STATE{RepeatString(" ", stateWidth - 5)}│ ID{RepeatString(" ", idWidth - 2)}│ TITLE{RepeatString(" ", titleWidth - 5)}│ STATUS{RepeatString(" ", statusWidth - 6)}│";
+        var separator = $"├{RepeatChar('─', stateWidth + 2)}┼{RepeatChar('─', idWidth + 2)}┼{RepeatChar('─', titleWidth + 2)}┼{RepeatChar('─', statusWidth + 2)}┤";
+        _prDisplayList.Add(header);
+        _prDisplayList.Add(separator);
+
         foreach (var pr in prsToShow)
         {
             var stateIcon = GetStateIcon(pr.State);
-            var approvalStatus = pr.IsApproved ? "[APPROVED]" : pr.IsDenied ? "[DENIED]" : "[PENDING]";
+            var approvalStatus = pr.IsApproved ? "APPROVED" : pr.IsDenied ? "DENIED" : "PENDING";
             var shortId = pr.Id.Replace("pr-", "");
-            _prDisplayList.Add($"{stateIcon} {shortId}: {pr.Title} {approvalStatus}");
+            var title = pr.Title.Length > titleWidth - 3 ? pr.Title.Substring(0, titleWidth - 6) + "..." : pr.Title;
+            _prDisplayList.Add($"│ {PadRight(stateIcon, stateWidth)} │ {PadRight(shortId, idWidth)} │ {PadRight(title, titleWidth)} │ {PadRight(approvalStatus, statusWidth)} │");
         }
     }
 
