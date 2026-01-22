@@ -105,6 +105,11 @@ public class MainView : Window
             }
             return true;
         }
+        if (key.KeyValue == (uint)'c' && isIssuesTab)
+        {
+            _issuesTab.NewIssue();
+            return true;
+        }
         return base.ProcessKey(key);
     }
 }
@@ -342,6 +347,7 @@ public class IssuesTab : BaseTab
         {
             new StatusItem(Key.E, "~E~ Edit", EditIssue),
             new StatusItem(Key.N, "~N~ New", NewIssue),
+            new StatusItem((Key)'c', "~c~ New", NewIssue),
             new StatusItem(Key.D, "~D~ Mark DONE", MarkAsDone),
             new StatusItem(Key.X, "~X~ Kill", KillIssue),
             new StatusItem((Key)'/', "~/~ Filter", () => { ShowFilterDialog(); })
@@ -380,7 +386,7 @@ public class IssuesTab : BaseTab
         _issueListView.SetSource(_issueDisplayList);
     }
 
-    private void NewIssue()
+    public void NewIssue()
     {
         var editView = new IssueEditView(null);
         editView.SetOnSave((savedIssue) =>

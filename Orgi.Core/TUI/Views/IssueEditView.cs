@@ -29,6 +29,10 @@ public class ScrollableTextView : TextView
             base.ProcessKey(new KeyEvent(Key.CursorUp, new KeyModifiers()));
             return true;
         }
+        if (key.Key == Key.Enter && key.Key.HasFlag(Key.CtrlMask))
+        {
+            return false;
+        }
         return base.ProcessKey(key);
     }
 }
@@ -81,12 +85,32 @@ public class ScrollableListView : ListView
     }
 }
 
+public class ScrollableTextField : TextField
+{
+    public ScrollableTextField() : base()
+    {
+    }
+
+    public ScrollableTextField(string text) : base(text)
+    {
+    }
+
+    public ScrollableTextField(int x, int y, int w, string text) : base(x, y, w, text)
+    {
+    }
+
+    public override bool ProcessKey(KeyEvent key)
+    {
+        return base.ProcessKey(key);
+    }
+}
+
 public class IssueEditView : Dialog
 {
-    private TextField _titleField = null!;
+    private ScrollableTextField _titleField = null!;
     private ScrollableListView _stateList = null!;
     private ScrollableListView _priorityList = null!;
-    private TextField _tagsField = null!;
+    private ScrollableTextField _tagsField = null!;
     private ScrollableTextView _descriptionView = null!;
     private Issue? _issue;
     private bool _isEditMode;
@@ -102,10 +126,26 @@ public class IssueEditView : Dialog
         Y = Pos.Center();
         Width = Dim.Percent(80);
         Height = Dim.Percent(80);
-        ColorScheme = Colors.Base;
+        ColorScheme = Colors.Menu;
 
+        SetupColorSchemes();
         CreateUI();
     }
+
+    private void SetupColorSchemes()
+    {
+        var listColorScheme = new ColorScheme()
+        {
+            Normal = Application.Driver.MakeAttribute(Color.White, Color.Black),
+            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            Focus = Application.Driver.MakeAttribute(Color.Black, Color.White),
+            HotFocus = Application.Driver.MakeAttribute(Color.BrightYellow, Color.White),
+            Disabled = Application.Driver.MakeAttribute(Color.Gray, Color.Black)
+        };
+        _listColorScheme = listColorScheme;
+    }
+
+    private ColorScheme _listColorScheme = null!;
 
     public override bool ProcessKey(KeyEvent key)
     {
@@ -119,6 +159,16 @@ public class IssueEditView : Dialog
             _descriptionView.ProcessKey(new KeyEvent(Key.CursorUp, new KeyModifiers()));
             return true;
         }
+        if (key.Key == Key.Enter)
+        {
+            OnSave();
+            return true;
+        }
+        if (key.KeyValue == (uint)'s' && key.Key.HasFlag(Key.CtrlMask))
+        {
+            OnSave();
+            return true;
+        }
         return base.ProcessKey(key);
     }
 
@@ -126,86 +176,112 @@ public class IssueEditView : Dialog
     {
         var y = 1;
 
-        new Label(1, y, "Title:");
-        _titleField = new TextField("")
+        var titleLabel = new Label(1, y, "Title:")
+        {
+            ColorScheme = Colors.Menu
+        };
+        Add(titleLabel);
+
+        _titleField = new ScrollableTextField("")
         {
             X = 20,
             Y = y,
-            Width = Dim.Fill() - 2
+            Width = Dim.Fill() - 2,
+            ColorScheme = Colors.Menu
         };
         Add(_titleField);
         y += 2;
 
-        new Label(1, y, "State:");
+        var stateLabel = new Label(1, y, "State:")
+        {
+            ColorScheme = Colors.Menu
+        };
+        Add(stateLabel);
+
         _stateList = new ScrollableListView(new List<string> { "TODO", "INPROGRESS", "DONE", "KILL" })
         {
             X = 20,
             Y = y,
             Width = 20,
-            Height = 4
+            Height = 4,
+            ColorScheme = _listColorScheme,
+            AllowsMarking = false,
+            AllowsMultipleSelection = false
         };
         Add(_stateList);
         y += 5;
 
-        new Label(1, y, "Priority:");
+        var priorityLabel = new Label(1, y, "Priority:")
+        {
+            ColorScheme = Colors.Menu
+        };
+        Add(priorityLabel);
+
         _priorityList = new ScrollableListView(new List<string> { "None", "A", "B", "C" })
         {
             X = 20,
             Y = y,
             Width = 10,
-            Height = 4
+            Height = 4,
+            ColorScheme = _listColorScheme,
+            AllowsMarking = false,
+            AllowsMultipleSelection = false
         };
         Add(_priorityList);
         y += 5;
 
-        new Label(1, y, "Tags (comma-separated):");
-        _tagsField = new TextField("")
+        var tagsLabel = new Label(1, y, "Tags (comma-separated):")
+        {
+            ColorScheme = Colors.Menu
+        };
+        Add(tagsLabel);
+
+        _tagsField = new ScrollableTextField("")
         {
             X = 30,
             Y = y,
-            Width = Dim.Fill() - 2
+            Width = Dim.Fill() - 2,
+            ColorScheme = Colors.Menu
         };
         Add(_tagsField);
         y += 2;
 
-        new Label(1, y, "Description:");
+        var descriptionLabel = new Label(1, y, "Description:")
+        {
+            ColorScheme = Colors.Menu
+        };
+        Add(descriptionLabel);
+
         y += 1;
         _descriptionView = new ScrollableTextView()
         {
             X = 1,
             Y = y,
             Width = Dim.Fill() - 2,
-            Height = Dim.Fill() - 8
+            Height = Dim.Fill() - 8,
+            ColorScheme = Colors.Menu
         };
         Add(_descriptionView);
 
-        var buttons = new View()
+        var cancelButton = new Button("Cancel")
         {
-            X = Pos.Center(),
+            X = Pos.Center() + 10,
             Y = Pos.Bottom(this) - 3,
-            Width = 20,
-            Height = 1
+            Width = 8,
+            ColorScheme = Colors.Menu
         };
+        cancelButton.Clicked += () => { Application.RequestStop(); };
+        Add(cancelButton);
 
         var saveButton = new Button("Save")
         {
-            X = 0,
-            Y = 0,
-            Width = 8
+            X = Pos.Center() - 10,
+            Y = Pos.Bottom(this) - 3,
+            Width = 8,
+            ColorScheme = Colors.Menu
         };
         saveButton.Clicked += OnSave;
-        buttons.Add(saveButton);
-
-        var cancelButton = new Button("Cancel")
-        {
-            X = 12,
-            Y = 0,
-            Width = 8
-        };
-        cancelButton.Clicked += () => { Application.RequestStop(); };
-        buttons.Add(cancelButton);
-
-        Add(buttons);
+        Add(saveButton);
 
         if (_isEditMode && _issue != null)
         {
