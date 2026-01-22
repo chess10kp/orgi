@@ -24,3 +24,12 @@
   :END:
 
   
+
+* INPROGRESS emacs :new tag:
+  :PROPERTIES:
+  :ID: task-20260121213532
+  :TITLE: emacs
+  :CREATED: <2026-01-21 Wed 21:35>
+  :END:
+
+  
