@@ -29,10 +29,6 @@ public class ScrollableTextView : TextView
             base.ProcessKey(new KeyEvent(Key.CursorUp, new KeyModifiers()));
             return true;
         }
-        if (key.Key == Key.Enter && key.Key.HasFlag(Key.CtrlMask))
-        {
-            return false;
-        }
         return base.ProcessKey(key);
     }
 }
@@ -111,7 +107,6 @@ public class IssueEditView : Dialog
     private ScrollableListView _stateList = null!;
     private ScrollableListView _priorityList = null!;
     private ScrollableTextField _tagsField = null!;
-    private ScrollableTextView _descriptionView = null!;
     private Issue? _issue;
     private bool _isEditMode;
     private Action<Issue>? _onSave;
@@ -149,16 +144,6 @@ public class IssueEditView : Dialog
 
     public override bool ProcessKey(KeyEvent key)
     {
-        if (key.KeyValue == (uint)'j' && _descriptionView.HasFocus)
-        {
-            _descriptionView.ProcessKey(new KeyEvent(Key.CursorDown, new KeyModifiers()));
-            return true;
-        }
-        if (key.KeyValue == (uint)'k' && _descriptionView.HasFocus)
-        {
-            _descriptionView.ProcessKey(new KeyEvent(Key.CursorUp, new KeyModifiers()));
-            return true;
-        }
         if (key.Key == Key.Enter)
         {
             OnSave();
@@ -187,7 +172,8 @@ public class IssueEditView : Dialog
             X = 20,
             Y = y,
             Width = Dim.Fill() - 2,
-            ColorScheme = Colors.Menu
+            ColorScheme = Colors.Menu,
+            TabStop = true
         };
         Add(_titleField);
         y += 2;
@@ -202,11 +188,12 @@ public class IssueEditView : Dialog
         {
             X = 20,
             Y = y,
-            Width = 20,
+            Width = 22,
             Height = 4,
             ColorScheme = _listColorScheme,
             AllowsMarking = false,
-            AllowsMultipleSelection = false
+            AllowsMultipleSelection = false,
+            TabStop = true
         };
         Add(_stateList);
         y += 5;
@@ -225,7 +212,8 @@ public class IssueEditView : Dialog
             Height = 4,
             ColorScheme = _listColorScheme,
             AllowsMarking = false,
-            AllowsMultipleSelection = false
+            AllowsMultipleSelection = false,
+            TabStop = true
         };
         Add(_priorityList);
         y += 5;
@@ -241,34 +229,19 @@ public class IssueEditView : Dialog
             X = 30,
             Y = y,
             Width = Dim.Fill() - 2,
-            ColorScheme = Colors.Menu
+            ColorScheme = Colors.Menu,
+            TabStop = true
         };
         Add(_tagsField);
         y += 2;
-
-        var descriptionLabel = new Label(1, y, "Description:")
-        {
-            ColorScheme = Colors.Menu
-        };
-        Add(descriptionLabel);
-
-        y += 1;
-        _descriptionView = new ScrollableTextView()
-        {
-            X = 1,
-            Y = y,
-            Width = Dim.Fill() - 2,
-            Height = Dim.Fill() - 8,
-            ColorScheme = Colors.Menu
-        };
-        Add(_descriptionView);
 
         var cancelButton = new Button("Cancel")
         {
             X = Pos.Center() + 10,
             Y = Pos.Bottom(this) - 3,
             Width = 8,
-            ColorScheme = Colors.Menu
+            ColorScheme = Colors.Menu,
+            TabStop = true
         };
         cancelButton.Clicked += () => { Application.RequestStop(); };
         Add(cancelButton);
@@ -278,7 +251,8 @@ public class IssueEditView : Dialog
             X = Pos.Center() - 10,
             Y = Pos.Bottom(this) - 3,
             Width = 8,
-            ColorScheme = Colors.Menu
+            ColorScheme = Colors.Menu,
+            TabStop = true
         };
         saveButton.Clicked += OnSave;
         Add(saveButton);
@@ -300,7 +274,6 @@ public class IssueEditView : Dialog
 
         _titleField.Text = ustring.Make(_issue.Title);
         _tagsField.Text = ustring.Make(string.Join(", ", _issue.Tags));
-        _descriptionView.Text = ustring.Make(_issue.Description);
 
         var stateIndex = _issue.State switch
         {
@@ -359,8 +332,6 @@ public class IssueEditView : Dialog
                 .Where(t => !string.IsNullOrWhiteSpace(t))
                 .ToList();
 
-            var descriptionText = _descriptionView.Text.ToString() ?? "";
-
             if (_isEditMode && _issue != null)
             {
                 var issueIndex = allIssues.FindIndex(i => i.Id == _issue.Id);
@@ -369,7 +340,7 @@ public class IssueEditView : Dialog
                     var updatedIssue = new Issue(
                         _issue.Id,
                         titleText,
-                        descriptionText,
+                        "",
                         _issue.CreatedAt,
                         state,
                         priority,
@@ -393,7 +364,7 @@ public class IssueEditView : Dialog
                 var newIssue = new Issue(
                     newId,
                     titleText,
-                    descriptionText,
+                    "",
                     created,
                     state,
                     priority,

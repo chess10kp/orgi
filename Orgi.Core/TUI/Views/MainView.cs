@@ -146,6 +146,7 @@ public class IssuesTab : BaseTab
         private List<Issue> _allIssues;
         private Action<string> _onFilter;
         private Action _showFilterAction;
+        private Action? _editIssueAction;
 
         public IssueListView(List<string> source, List<Issue> allIssues, Action<string> onFilter, Action showFilterAction) : base(source)
         {
@@ -154,11 +155,21 @@ public class IssuesTab : BaseTab
             _showFilterAction = showFilterAction;
         }
 
+        public void SetEditIssueAction(Action editIssueAction)
+        {
+            _editIssueAction = editIssueAction;
+        }
+
         public override bool ProcessKey(KeyEvent key)
         {
             if (key.KeyValue == (uint)'/')
             {
                 _showFilterAction();
+                return true;
+            }
+            if (key.KeyValue == (uint)'e')
+            {
+                _editIssueAction?.Invoke();
                 return true;
             }
             return base.ProcessKey(key);
@@ -200,7 +211,7 @@ public class IssuesTab : BaseTab
     private string? _currentFilter = null;
 
     private const int MinTerminalWidth = 90;
-    private const int StateColumnWidth = 8;
+    private const int StateColumnWidth = 10;
     private const int IdColumnWidth = 18;
 
     private string RepeatChar(char c, int count)
@@ -332,6 +343,7 @@ public class IssuesTab : BaseTab
             Width = Dim.Fill(),
             Height = Dim.Fill() - 3
         };
+        _issueListView.SetEditIssueAction(() => { EditIssue(); });
 
         _issueListView.OpenSelectedItem += (args) =>
         {
