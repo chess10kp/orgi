@@ -1,0 +1,23 @@
+{
+  "Id": "pr-20250118110000",
+  "Title": "Fix database connection issue",
+  "Description": "Added connection pooling and retry logic for database connections under high load",
+  "Author": "bob",
+  "CreatedAt": "2025-01-18T11:00:00",
+  "UpdatedAt": "2025-01-18T12:30:00",
+  "State": 1,
+  "SourceBranch": "fix/db-connection",
+  "TargetBranch": "main",
+  "Reviews": [
+    {
+      "Reviewer": "alice",
+      "Approved": true,
+      "Comment": "LGTM, ready to merge",
+      "ReviewedAt": "2025-01-18T12:30:00"
+    }
+  ],
+  "Commits": [],
+  "MergedBy": null,
+  "MergedAt": null,
+  "MergeCommit": null
+}

@@ -1,0 +1,23 @@
+{
+  "Id": "pr-20250118120000",
+  "Title": "Update dependencies",
+  "Description": "Updated all NuGet packages to latest versions",
+  "Author": "charlie",
+  "CreatedAt": "2025-01-18T12:00:00",
+  "UpdatedAt": "2025-01-18T12:30:00",
+  "State": 2,
+  "SourceBranch": "chore/update-deps",
+  "TargetBranch": "main",
+  "Reviews": [
+    {
+      "Reviewer": "alice",
+      "Approved": false,
+      "Comment": "Breaking changes in some packages, need to review more carefully",
+      "ReviewedAt": "2025-01-18T12:30:00"
+    }
+  ],
+  "Commits": [],
+  "MergedBy": null,
+  "MergedAt": null,
+  "MergeCommit": null
+}

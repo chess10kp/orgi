@@ -1,0 +1,16 @@
+{
+  "Id": "pr-20250118100000",
+  "Title": "Add user authentication",
+  "Description": "Implements OAuth2 authentication with GitHub provider",
+  "Author": "alice",
+  "CreatedAt": "2025-01-18T10:00:00",
+  "UpdatedAt": "2025-01-18T10:00:00",
+  "State": 0,
+  "SourceBranch": "feature/auth",
+  "TargetBranch": "main",
+  "Reviews": [],
+  "Commits": [],
+  "MergedBy": null,
+  "MergedAt": null,
+  "MergeCommit": null
+}
